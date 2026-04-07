@@ -19,18 +19,8 @@ byte pinesCols[COLS]   = {6, 7, 8, 9};
 Keypad teclado = Keypad(makeKeymap(teclas), pinesFilas, pinesCols, FILAS, COLS);
 
 // ── Motores DC (aficionado) via L298N o L293D ──────────────
-// Cada módulo tiene su propio pin de habilitación (ENA/ENB)
-// Un solo sentido de giro es suficiente para expulsar
-// Conecta: IN1 → 5V fijo, IN2 → GND fijo, ENA → pin PWM
-// O más simple: pin HIGH = motor ON, LOW = motor OFF
-
 const int MOTOR_PINES[8] = {10, 11, 12, 13, A1, A2, A3, A4};
-// Estos pines van al pin ENA (enable) de cada canal del puente H
-// Los pines 10, 11 son PWM; para velocidad variable úsalos primero.
-// A1–A4 son digitales simples (ON/OFF sin PWM).
-
-// Velocidad PWM para los pines que lo soportan (0–255)
-const int VELOCIDAD_PWM = 200;
+const int VELOCIDAD_PWM  = 200;
 
 // ── LCD I2C ────────────────────────────────────────────────
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -52,12 +42,19 @@ Modulo modulos[8] = {
   {"88", "Objeto H"}
 };
 
-// ── Tiempo de activación del motor (ms) ───────────────────
+// ── Tiempo de activación del motor ────────────────────────
 const unsigned long TIEMPO_MOTOR = 7000;
 
 // ── Variables de estado ────────────────────────────────────
 String entradaActual = "";
 const int MAX_DIGITOS = 2;
+
+// ── Prototipos ─────────────────────────────────────────────
+void procesarCodigo(String codigo);
+void activarModulo(int idx);
+void mostrarBienvenida();
+void mostrarEspera();
+void mostrarEntrada();
 
 // ──────────────────────────────────────────────────────────
 void setup() {
@@ -65,7 +62,7 @@ void setup() {
 
   for (int i = 0; i < 8; i++) {
     pinMode(MOTOR_PINES[i], OUTPUT);
-    digitalWrite(MOTOR_PINES[i], LOW);  // motores apagados al inicio
+    digitalWrite(MOTOR_PINES[i], LOW);
   }
 
   lcd.init();
@@ -110,18 +107,20 @@ void procesarCodigo(String codigo) {
     }
   }
 
+  // No coincide → aviso y restablece
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Codigo invalido");
   lcd.setCursor(0, 1);
-  lcd.print("Intente de nuevo");
+  lcd.print("Reiniciando...");
   delay(2000);
+
+  entradaActual = "";
   mostrarEspera();
 }
 
-// ── Enciende el motor 7 s y luego lo apaga ─────────────────
+// ── Enciende el motor 7 s con cuenta regresiva y apaga ─────
 void activarModulo(int idx) {
-  // Mostrar módulo activo
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Modulo ");
@@ -130,15 +129,16 @@ void activarModulo(int idx) {
   lcd.setCursor(0, 1);
   lcd.print(modulos[idx].objeto);
 
-  // Encender motor (PWM en pines compatibles, digital en el resto)
   int pin = MOTOR_PINES[idx];
+
+  // Encender motor
   if (pin == 10 || pin == 11) {
-    analogWrite(pin, VELOCIDAD_PWM);   // velocidad controlada por PWM
+    analogWrite(pin, VELOCIDAD_PWM);
   } else {
-    digitalWrite(pin, HIGH);           // encendido simple ON/OFF
+    digitalWrite(pin, HIGH);
   }
 
-  // Cuenta regresiva en LCD durante los 7 segundos
+  // Cuenta regresiva 7 → 1
   for (int seg = 7; seg >= 1; seg--) {
     lcd.setCursor(0, 1);
     lcd.print("Tiempo: ");
@@ -154,7 +154,7 @@ void activarModulo(int idx) {
     digitalWrite(pin, LOW);
   }
 
-  // Confirmación
+  // Confirmación en pantalla
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Motor detenido");
@@ -162,6 +162,8 @@ void activarModulo(int idx) {
   lcd.print(modulos[idx].objeto);
   delay(2000);
 
+  // Restablece desde cero
+  entradaActual = "";
   mostrarEspera();
 }
 
