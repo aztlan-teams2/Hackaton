@@ -1,12 +1,40 @@
-import { Parser } from 'acorn' 
+type Rules = { "only-export-components": any };
 
-declare const jsx: (options?: jsx.Options) => (BaseParser: typeof Parser) => typeof Parser;
+export type OnlyExportComponentsOptions = {
+  extraHOCs?: string[];
+  allowExportNames?: string[];
+  allowConstantExport?: boolean;
+  checkJS?: boolean;
+};
 
-declare namespace jsx {
-  interface Options {
-    allowNamespacedObjects?: boolean;
-    allowNamespaces?: boolean;
-  }
-}
+type Config = {
+  name: string;
+  plugins: { "react-refresh": { rules: Rules } };
+  rules: Rules;
+};
+type ConfigFn = (options?: OnlyExportComponentsOptions) => {
+  name: string;
+  plugins: { "react-refresh": { rules: Rules } };
+  rules: Rules;
+};
 
-export = jsx;
+export const reactRefresh: {
+  plugin: {
+    rules: Rules;
+  };
+  configs: {
+    recommended: ConfigFn;
+    vite: ConfigFn;
+    next: ConfigFn;
+  };
+};
+
+declare const _default: {
+  rules: Rules;
+  configs: {
+    recommended: Config;
+    vite: Config;
+    next: Config;
+  };
+};
+export default _default;

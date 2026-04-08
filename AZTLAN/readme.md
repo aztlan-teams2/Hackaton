@@ -1,64 +1,33 @@
-# yocto-queue [![](https://badgen.net/bundlephobia/minzip/yocto-queue)](https://bundlephobia.com/result?p=yocto-queue)
+<img src="images/immer-logo.svg" height="200px" align="right"/>
 
-> Tiny queue data structure
+# Immer
 
-You should use this package instead of an array if you do a lot of `Array#push()` and `Array#shift()` on large arrays, since `Array#shift()` has [linear time complexity](https://medium.com/@ariel.salem1989/an-easy-to-use-guide-to-big-o-time-complexity-5dcf4be8a444#:~:text=O(N)%E2%80%94Linear%20Time) *O(n)* while `Queue#dequeue()` has [constant time complexity](https://medium.com/@ariel.salem1989/an-easy-to-use-guide-to-big-o-time-complexity-5dcf4be8a444#:~:text=O(1)%20%E2%80%94%20Constant%20Time) *O(1)*. That makes a huge difference for large arrays.
+[![npm](https://img.shields.io/npm/v/immer.svg)](https://www.npmjs.com/package/immer) [![Build Status](https://github.com/immerjs/immer/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/immerjs/immer/actions?query=branch%3Amain) [![Coverage Status](https://coveralls.io/repos/github/immerjs/immer/badge.svg?branch=main)](https://coveralls.io/github/immerjs/immer?branch=main) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier) [![OpenCollective](https://opencollective.com/immer/backers/badge.svg)](#backers) [![OpenCollective](https://opencollective.com/immer/sponsors/badge.svg)](#sponsors) [![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/immerjs/immer)
 
-> A [queue](https://en.wikipedia.org/wiki/Queue_(abstract_data_type)) is an ordered list of elements where an element is inserted at the end of the queue and is removed from the front of the queue. A queue works based on the first-in, first-out ([FIFO](https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics))) principle.
+_Create the next immutable state tree by simply modifying the current tree_
 
-## Install
+Winner of the "Breakthrough of the year" [React open source award](https://osawards.com/react/) and "Most impactful contribution" [JavaScript open source award](https://osawards.com/javascript/) in 2019
 
-```
-$ npm install yocto-queue
-```
+## Contribute using one-click online setup
 
-## Usage
+You can use Gitpod (a free online VS Code like IDE) for contributing online. With a single click it will launch a workspace and automatically:
 
-```js
-const Queue = require('yocto-queue');
+- clone the immer repo.
+- install the dependencies.
+- run `yarn run start`.
 
-const queue = new Queue();
+so that you can start coding straight away.
 
-queue.enqueue('🦄');
-queue.enqueue('🌈');
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/from-referrer/)
 
-console.log(queue.size);
-//=> 2
+## Documentation
 
-console.log(...queue);
-//=> '🦄 🌈'
+The documentation of this package is hosted at https://immerjs.github.io/immer/
 
-console.log(queue.dequeue());
-//=> '🦄'
+## Support
 
-console.log(queue.dequeue());
-//=> '🌈'
-```
+Did Immer make a difference to your project? Join the open collective at https://opencollective.com/immer!
 
-## API
+## Release notes
 
-### `queue = new Queue()`
-
-The instance is an [`Iterable`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols), which means you can iterate over the queue front to back with a “for…of” loop, or use spreading to convert the queue to an array. Don't do this unless you really need to though, since it's slow.
-
-#### `.enqueue(value)`
-
-Add a value to the queue.
-
-#### `.dequeue()`
-
-Remove the next value in the queue.
-
-Returns the removed value or `undefined` if the queue is empty.
-
-#### `.clear()`
-
-Clear the queue.
-
-#### `.size`
-
-The size of the queue.
-
-## Related
-
-- [quick-lru](https://github.com/sindresorhus/quick-lru) - Simple “Least Recently Used” (LRU) cache
+https://github.com/immerjs/immer/releases

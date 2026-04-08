@@ -1,549 +1,151 @@
-# 6.1.2
+### Version 4.0.0 (2018-01-28) ###
 
-- Fixed: erroneous trailing combinators in pseudos
+- Added: Support for ES2018. The only change needed was recognizing the `s`
+  regex flag.
+- Changed: _All_ tokens returned by the `matchToToken` function now have a
+  `closed` property. It is set to `undefined` for the tokens where “closed”
+  doesn’t make sense. This means that all tokens objects have the same shape,
+  which might improve performance.
 
-# 6.1.1
+These are the breaking changes:
 
-- Fixed: improve typings of constructor helpers (#292)
+- `'/a/s'.match(jsTokens)` no longer returns `['/', 'a', '/', 's']`, but
+  `['/a/s']`. (There are of course other variations of this.)
+- Code that rely on some token objects not having the `closed` property could
+  now behave differently.
 
-# 6.1.0
 
-- Feature: add `sourceIndex` to `Selector` nodes (#290)
+### Version 3.0.2 (2017-06-28) ###
 
-# 6.0.16
+- No code changes. Just updates to the readme.
 
-- Fixed: add missing `index` argument to `each`/`walk` callback types (#289)
 
-# 6.0.15
+### Version 3.0.1 (2017-01-30) ###
 
-- Fixed: Node#prev and Node#next type for the first/last node
+- Fixed: ES2015 unicode escapes with more than 6 hex digits are now matched
+  correctly.
 
-# 6.0.14
 
-- Fixed: type definitions
+### Version 3.0.0 (2017-01-11) ###
 
-# 6.0.13
+This release contains one breaking change, that should [improve performance in
+V8][v8-perf]:
 
-- Fixed: throw on unexpected pipe symbols
+> So how can you, as a JavaScript developer, ensure that your RegExps are fast?
+> If you are not interested in hooking into RegExp internals, make sure that
+> neither the RegExp instance, nor its prototype is modified in order to get the
+> best performance:
+>
+> ```js
+> var re = /./g;
+> re.exec('');  // Fast path.
+> re.new_property = 'slow';
+> ```
 
-# 6.0.12
+This module used to export a single regex, with `.matchToToken` bolted
+on, just like in the above example. This release changes the exports of
+the module to avoid this issue.
 
-- Fixed: `clone` arguments should be optional
-
-# 6.0.11
-
-- Fixed: parse attribute case insensitivity flag
-
-# 6.0.10
-
-- Fixed: `isPseudoElement()` supports `:first-letter` and `:first-line`
-
-# 6.0.9
-
-- Fixed: `Combinator.raws` property type
-
-# 6.0.8
-
-- Fixed: reduced size
-
-# 6.0.7
-
-- Fixed: parse animation percents
-
-# 6.0.6
-
-- Fixed: parse quoted attributes containing a newline correctly
-
-# 6.0.5
-
-- Perf: rework unesc for a 63+% performance boost
-
-# 6.0.4
-
-- Fixed: ts errors
-
-# 6.0.3
-
-- Fixed: replace node built-in "util" module with "util-deprecate"
-- Fixed: handle uppercase pseudo elements
-- Fixed: do not create invalid combinator before comment
-
-# 6.0.2
-
-- Fixed an issue with parsing and stringifying an empty attribute value
-
-# 6.0.1
-
-- Fixed an issue with unicode surrogate pair parsing
-
-# 6.0.0
-
-- Updated: `cssesc` to 3.0.0 (major)
-- Fixed: Issues with escaped `id` and `class` selectors
-
-# 5.0.0
-
-- Allow escaped dot within class name.
-- Update PostCSS to 7.0.7 (patch)
-
-# 5.0.0-rc.4
-
-- Fixed an issue where comments immediately after an insensitive (in attribute)
-  were not parsed correctly.
-- Updated `cssesc` to 2.0.0 (major).
-- Removed outdated integration tests.
-- Added tests for custom selectors, tags with attributes, the universal
-  selector with pseudos, and tokens after combinators.
-
-# 5.0.0-rc.1
-
-To ease adoption of the v5.0 release, we have relaxed the node version
-check performed by npm at installation time to allow for node 4, which
-remains officially unsupported, but likely to continue working for the
-time being.
-
-# 5.0.0-rc.0
-
-This release has **BREAKING CHANGES** that were required to fix regressions
-in 4.0.0 and to make the Combinator Node API consistent for all combinator
-types. Please read carefully.
-
-## Summary of Changes
-
-* The way a descendent combinator that isn't a single space character (E.g. `.a  .b`) is stored in the AST has changed.
-* Named Combinators (E.g. `.a /for/ .b`) are now properly parsed as a combinator.
-* It is now possible to look up a node based on the source location of a character in that node and to query nodes if they contain some character.
-* Several bug fixes that caused the parser to hang and run out of memory when a `/` was encountered have been fixed.
-* The minimum supported version of Node is now `v6.0.0`.
-
-### Changes to the Descendent Combinator
-
-In prior releases, the value of a descendant combinator with multiple spaces included all the spaces.
-
-* `.a   .b`: Extra spaces are now stored as space before.
-  - Old & Busted:
-    - `combinator.value === "   "`
-  - New hotness:
-    - `combinator.value === " " && combinator.spaces.before === "  "`
-* `.a   /*comment*/.b`: A comment at the end of the combinator causes extra space to become after space.
-  - Old & Busted:
-    - `combinator.value === "   "`
-    - `combinator.raws.value === "   /*comment/"`
-  - New hotness:
-    - `combinator.value === " "`
-    - `combinator.spaces.after === "  "`
-    - `combinator.raws.spaces.after === "  /*comment*/"`
-* `.a<newline>.b`: whitespace that doesn't start or end with a single space character is stored as a raw value.
-  - Old & Busted:
-    - `combinator.value === "\n"`
-    - `combinator.raws.value === undefined`
-  - New hotness:
-    - `combinator.value === " "`
-    - `combinator.raws.value === "\n"`
-
-### Support for "Named Combinators"
-
-Although, nonstandard and unlikely to ever become a standard, combinators like `/deep/` and `/for/` are now properly supported.
-
-Because they've been taken off the standardization track, there is no spec-official name for combinators of the form `/<ident>/`. However, I talked to [Tab Atkins](https://twitter.com/tabatkins) and we agreed to call them "named combinators" so now they are called that.
-
-Before this release such named combinators were parsed without intention and generated three nodes of type `"tag"` where the first and last nodes had a value of `"/"`.
-
-* `.a /for/ .b` is parsed as a combinator.
-  - Old & Busted:
-    - `root.nodes[0].nodes[1].type === "tag"`
-    - `root.nodes[0].nodes[1].value === "/"`
-  - New hotness:
-    - `root.nodes[0].nodes[1].type === "combinator"`
-    - `root.nodes[0].nodes[1].value === "/for/"`
-* `.a /F\6fR/ .b` escapes are handled and uppercase is normalized.
-  - Old & Busted:
-    - `root.nodes[0].nodes[2].type === "tag"`
-    - `root.nodes[0].nodes[2].value === "F\\6fR"`
-  - New hotness:
-    - `root.nodes[0].nodes[1].type === "combinator"`
-    - `root.nodes[0].nodes[1].value === "/for/"`
-    - `root.nodes[0].nodes[1].raws.value === "/F\\6fR/"`
-
-### Source position checks and lookups
-
-A new API was added to look up a node based on the source location.
+Before:
 
 ```js
-const selectorParser = require("postcss-selector-parser");
-// You can find the most specific node for any given character
-let combinator = selectorParser.astSync(".a > .b").atPosition(1,4);
-combinator.toString() === " > ";
-// You can check if a node includes a specific character
-// Whitespace surrounding the node that is owned by that node
-// is included in the check.
-[2,3,4,5,6].map(column => combinator.isAtPosition(1, column));
-// => [false, true, true, true, false]
+import jsTokens from "js-tokens"
+// or:
+var jsTokens = require("js-tokens")
+var matchToToken = jsTokens.matchToToken
 ```
 
-# 4.0.0
-
-This release has **BREAKING CHANGES** that were required to fix bugs regarding values with escape sequences. Please read carefully.
-
-* **Identifiers with escapes** - CSS escape sequences are now hidden from the public API by default.
-  The normal value of a node like a class name or ID, or an aspect of a node such as attribute
-  selector's value, is unescaped. Escapes representing Non-ascii characters are unescaped into
-  unicode characters. For example: `bu\tton, .\31 00, #i\2764\FE0Fu, [attr="value is \"quoted\""]`
-  will parse respectively to the values `button`, `100`, `i❤️u`, `value is "quoted"`.
-  The original escape sequences for these values can be found in the corresponding property name
-  in `node.raws`. Where possible, deprecation warnings were added, but the nature
-  of escape handling makes it impossible to detect what is escaped or not. Our expectation is
-  that most users are neither expecting nor handling escape sequences in their use of this library,
-  and so for them, this is a bug fix. Users who are taking care to handle escapes correctly can
-  now update their code to remove the escape handling and let us do it for them.
-
-* **Mutating values with escapes** - When you make an update to a node property that has escape handling
-  The value is assumed to be unescaped, and any special characters are escaped automatically and
-  the corresponding `raws` value is immediately updated. This can result in changes to the original
-  escape format. Where the exact value of the escape sequence is important there are methods that
-  allow both values to be set in conjunction. There are a number of new convenience methods for
-  manipulating values that involve escapes, especially for attributes values where the quote mark
-  is involved. See https://github.com/postcss/postcss-selector-parser/pull/133 for an extensive
-  write-up on these changes.
-
-
-**Upgrade/API Example**
-
-In `3.x` there was no unescape handling and internal consistency of several properties was the caller's job to maintain. It was very easy for the developer
-to create a CSS file that did not parse correctly when some types of values
-were in use.
+After:
 
 ```js
-const selectorParser = require("postcss-selector-parser");
-let attr = selectorParser.attribute({attribute: "id", operator: "=", value: "a-value"});
-attr.value; // => "a-value"
-attr.toString(); // => [id=a-value]
-// Add quotes to an attribute's value.
-// All these values have to be set by the caller to be consistent:
-// no internal consistency is maintained.
-attr.raws.unquoted = attr.value
-attr.value = "'" + attr.value + "'";
-attr.value; // => "'a-value'"
-attr.quoted = true;
-attr.toString();  // => "[id='a-value']"
+import jsTokens, {matchToToken} from "js-tokens"
+// or:
+var jsTokens = require("js-tokens").default
+var matchToToken = require("js-tokens").matchToToken
 ```
 
-In `4.0` there is a convenient API for setting and mutating values
-that may need escaping. Especially for attributes.
-
-```js
-const selectorParser = require("postcss-selector-parser");
-
-// The constructor requires you specify the exact escape sequence
-let className = selectorParser.className({value: "illegal class name", raws: {value: "illegal\\ class\\ name"}});
-className.toString(); // => '.illegal\\ class\\ name'
-
-// So it's better to set the value as a property
-className = selectorParser.className();
-// Most properties that deal with identifiers work like this
-className.value = "escape for me";
-className.value; // => 'escape for me'
-className.toString(); // => '.escape\\ for\\ me'
-
-// emoji and all non-ascii are escaped to ensure it works in every css file.
-className.value = "😱🦄😍";
-className.value; // => '😱🦄😍'
-className.toString(); // => '.\\1F631\\1F984\\1F60D'
-
-// you can control the escape sequence if you want, or do bad bad things
-className.setPropertyAndEscape('value', 'xxxx', 'yyyy');
-className.value; // => "xxxx"
-className.toString(); // => ".yyyy"
-
-// Pass a value directly through to the css output without escaping it. 
-className.setPropertyWithoutEscape('value', '$REPLACE_ME$');
-className.value; // => "$REPLACE_ME$"
-className.toString(); // => ".$REPLACE_ME$"
-
-// The biggest changes are to the Attribute class
-// passing quoteMark explicitly is required to avoid a deprecation warning.
-let attr = selectorParser.attribute({attribute: "id", operator: "=", value: "a-value", quoteMark: null});
-attr.toString(); // => "[id=a-value]"
-// Get the value with quotes on it and any necessary escapes.
-// This is the same as reading attr.value in 3.x.
-attr.getQuotedValue(); // => "a-value";
-attr.quoteMark; // => null
-
-// Add quotes to an attribute's value.
-attr.quoteMark = "'"; // This is all that's required.
-attr.toString(); // => "[id='a-value']"
-attr.quoted; // => true
-// The value is still the same, only the quotes have changed.
-attr.value; // => a-value
-attr.getQuotedValue(); // => "'a-value'";
-
-// deprecated assignment, no warning because there's no escapes
-attr.value = "new-value";
-// no quote mark is needed so it is removed
-attr.getQuotedValue(); // => "new-value";
-
-// deprecated assignment, 
-attr.value = "\"a 'single quoted' value\"";
-// > (node:27859) DeprecationWarning: Assigning an attribute a value containing characters that might need to be escaped is deprecated. Call attribute.setValue() instead.
-attr.getQuotedValue(); // => '"a \'single quoted\' value"';
-// quote mark inferred from first and last characters.
-attr.quoteMark; // => '"'
-
-// setValue takes options to make manipulating the value simple.
-attr.setValue('foo', {smart: true});
-// foo doesn't require any escapes or quotes.
-attr.toString(); // => '[id=foo]'
-attr.quoteMark; // => null 
-
-// An explicit quote mark can be specified
-attr.setValue('foo', {quoteMark: '"'});
-attr.toString(); // => '[id="foo"]'
-
-// preserves quote mark by default
-attr.setValue('bar');
-attr.toString(); // => '[id="bar"]'
-attr.quoteMark = null;
-attr.toString(); // => '[id=bar]'
-
-// with no arguments, it preserves quote mark even when it's not a great idea
-attr.setValue('a value \n that should be quoted');
-attr.toString(); // => '[id=a\\ value\\ \\A\\ that\\ should\\ be\\ quoted]'
-
-// smart preservation with a specified default
-attr.setValue('a value \n that should be quoted', {smart: true, preferCurrentQuoteMark: true, quoteMark: "'"});
-// => "[id='a value \\A  that should be quoted']"
-attr.quoteMark = '"';
-// => '[id="a value \\A  that should be quoted"]'
-
-// this keeps double quotes because it wants to quote the value and the existing value has double quotes.
-attr.setValue('this should be quoted', {smart: true, preferCurrentQuoteMark: true, quoteMark: "'"});
-// => '[id="this should be quoted"]'
-
-// picks single quotes because the value has double quotes
-attr.setValue('a "double quoted" value', {smart: true, preferCurrentQuoteMark: true, quoteMark: "'"});
-// => "[id='a "double quoted" value']"
+[v8-perf]: http://v8project.blogspot.se/2017/01/speeding-up-v8-regular-expressions.html
 
-// setPropertyAndEscape lets you do anything you want. Even things that are a bad idea and illegal.
-attr.setPropertyAndEscape('value', 'xxxx', 'the password is 42');
-attr.value; // => "xxxx"
-attr.toString(); // => "[id=the password is 42]"
 
-// Pass a value directly through to the css output without escaping it. 
-attr.setPropertyWithoutEscape('value', '$REPLACEMENT$');
-attr.value; // => "$REPLACEMENT$"
-attr.toString(); // => "[id=$REPLACEMENT$]"
-```
+### Version 2.0.0 (2016-06-19) ###
 
-# 3.1.2
+- Added: Support for ES2016. In other words, support for the `**` exponentiation
+  operator.
 
-* Fix: Removed dot-prop dependency since it's no longer written in es5.
+These are the breaking changes:
 
-# 3.1.1
+- `'**'.match(jsTokens)` no longer returns `['*', '*']`, but `['**']`.
+- `'**='.match(jsTokens)` no longer returns `['*', '*=']`, but `['**=']`.
 
-* Fix: typescript definitions weren't in the published package.
 
-# 3.1.0
+### Version 1.0.3 (2016-03-27) ###
 
-* Fixed numerous bugs in attribute nodes relating to the handling of comments
-  and whitespace. There's significant changes to `attrNode.spaces` and `attrNode.raws` since the `3.0.0` release.
-* Added `Attribute#offsetOf(part)` to get the offset location of
-  attribute parts like `"operator"` and `"value"`. This is most
-  often added to `Attribute#sourceIndex` for error reporting.
+- Improved: Made the regex ever so slightly smaller.
+- Updated: The readme.
 
-# 3.0.0
 
-## Breaking changes
+### Version 1.0.2 (2015-10-18) ###
 
-* Some tweaks to the tokenizer/attribute selector parsing mean that whitespace
-  locations might be slightly different to the 2.x code.
-* Better attribute selector parsing with more validation; postcss-selector-parser
-  no longer uses regular expressions to parse attribute selectors.
-* Added an async API (thanks to @jacobp100); the default `process` API is now
-  async, and the sync API is now accessed through `processSync` instead.
-* `process()` and `processSync()` now return a string instead of the Processor
-  instance.
-* Tweaks handling of Less interpolation (thanks to @jwilsson).
-* Removes support for Node 0.12.
+- Improved: Limited npm package contents for a smaller download. Thanks to
+  @zertosh!
 
-## Other changes
 
-* `ast()` and `astSync()` methods have been added to the `Processor`. These
-  return the `Root` node of the selectors after processing them.
-* `transform()` and `transformSync()` methods have been added to the
-  `Processor`. These return the value returned by the processor callback
-  after processing the selectors.
-* Set the parent when inserting a node (thanks to @chriseppstein).
-* Correctly adjust indices when using insertBefore/insertAfter (thanks to @tivac).
-* Fixes handling of namespaces with qualified tag selectors.
-* `process`, `ast` and `transform` (and their sync variants) now accept a
-  `postcss` rule node. When provided, better errors are generated and selector
-  processing is automatically set back to the rule selector (unless the `updateSelector` option is set to `false`.)
-* Now more memory efficient when tokenizing selectors.
+### Version 1.0.1 (2015-06-20) ###
 
-### Upgrade hints
+- Fixed: Declared an undeclared variable.
 
-The pattern of:
 
-`rule.selector = processor.process(rule.selector).result.toString();`
+### Version 1.0.0 (2015-02-26) ###
 
-is now:
+- Changed: Merged the 'operator' and 'punctuation' types into 'punctuator'. That
+  type is now equivalent to the Punctuator token in the ECMAScript
+  specification. (Backwards-incompatible change.)
+- Fixed: A `-` followed by a number is now correctly matched as a punctuator
+  followed by a number. It used to be matched as just a number, but there is no
+  such thing as negative number literals. (Possibly backwards-incompatible
+  change.)
 
-`processor.processSync(rule)`
 
-# 2.2.3
+### Version 0.4.1 (2015-02-21) ###
 
-* Resolves an issue where the parser would not reduce multiple spaces between an
-  ampersand and another simple selector in lossy mode (thanks to @adam-26).
+- Added: Support for the regex `u` flag.
 
-# 2.2.2
 
-* No longer hangs on an unescaped semicolon; instead the parser will throw
-  an exception for these cases.
+### Version 0.4.0 (2015-02-21) ###
 
-# 2.2.1
+- Improved: `jsTokens.matchToToken` performance.
+- Added: Support for octal and binary number literals.
+- Added: Support for template strings.
 
-* Allows a consumer to specify whitespace tokens when creating a new Node
-  (thanks to @Semigradsky).
 
-# 2.2.0
+### Version 0.3.1 (2015-01-06) ###
 
-* Added a new option to normalize whitespace when parsing the selector string
-  (thanks to @adam-26).
+- Fixed: Support for unicode spaces. They used to be allowed in names (which is
+  very confusing), and some unicode newlines were wrongly allowed in strings and
+  regexes.
 
-# 2.1.1
 
-* Better unquoted value handling within attribute selectors
-  (thanks to @evilebottnawi).
+### Version 0.3.0 (2014-12-19) ###
 
-# 2.1.0
+- Changed: The `jsTokens.names` array has been replaced with the
+  `jsTokens.matchToToken` function. The capturing groups of `jsTokens` are no
+  longer part of the public API; instead use said function. See this [gist] for
+  an example. (Backwards-incompatible change.)
+- Changed: The empty string is now considered an “invalid” token, instead an
+  “empty” token (its own group). (Backwards-incompatible change.)
+- Removed: component support. (Backwards-incompatible change.)
 
-* Added: Use string constants for all node types & expose them on the main
-  parser instance (thanks to @Aweary).
+[gist]: https://gist.github.com/lydell/be49dbf80c382c473004
 
-# 2.0.0
 
-This release contains the following breaking changes:
+### Version 0.2.0 (2014-06-19) ###
 
-* Renamed all `eachInside` iterators to `walk`. For example, `eachTag` is now
-  `walkTags`, and `eachInside` is now `walk`.
-* Renamed `Node#removeSelf()` to `Node#remove()`.
-* Renamed `Container#remove()` to `Container#removeChild()`.
-* Renamed `Node#raw` to `Node#raws` (thanks to @davidtheclark).
-* Now parses `&` as the *nesting* selector, rather than a *tag* selector.
-* Fixes misinterpretation of Sass interpolation (e.g. `#{foo}`) as an
-  id selector (thanks to @davidtheclark).
+- Changed: Match ES6 function arrows (`=>`) as an operator, instead of its own
+  category (“functionArrow”), for simplicity. (Backwards-incompatible change.)
+- Added: ES6 splats (`...`) are now matched as an operator (instead of three
+  punctuations). (Backwards-incompatible change.)
 
-and;
 
-* Fixes parsing of attribute selectors with equals signs in them
-  (e.g. `[data-attr="foo=bar"]`) (thanks to @montmanu).
-* Adds `quoted` and `raw.unquoted` properties to attribute nodes
-  (thanks to @davidtheclark).
+### Version 0.1.0 (2014-03-08) ###
 
-# 1.3.3
-
-* Fixes an infinite loop on `)` and `]` tokens when they had no opening pairs.
-  Now postcss-selector-parser will throw when it encounters these lone tokens.
-
-# 1.3.2
-
-* Now uses plain integers rather than `str.charCodeAt(0)` for compiled builds.
-
-# 1.3.1
-
-* Update flatten to v1.x (thanks to @shinnn).
-
-# 1.3.0
-
-* Adds a new node type, `String`, to fix a crash on selectors such as
-  `foo:bar("test")`.
-
-# 1.2.1
-
-* Fixes a crash when the parser encountered a trailing combinator.
-
-# 1.2.0
-
-* A more descriptive error is thrown when the parser expects to find a
-  pseudo-class/pseudo-element (thanks to @ashelley).
-* Adds support for line/column locations for selector nodes, as well as a
-  `Node#sourceIndex` method (thanks to @davidtheclark).
-
-# 1.1.4
-
-* Fixes a crash when a selector started with a `>` combinator. The module will
-  now no longer throw if a selector has a leading/trailing combinator node.
-
-# 1.1.3
-
-* Fixes a crash on `@` tokens.
-
-# 1.1.2
-
-* Fixes an infinite loop caused by using parentheses in a non-pseudo element
-  context.
-
-# 1.1.1
-
-* Fixes a crash when a backslash ended a selector string.
-
-# 1.1.0
-
-* Adds support for replacing multiple nodes at once with `replaceWith`
-  (thanks to @jonathantneal).
-* Parser no longer throws on sequential IDs and trailing commas, to support
-  parsing of selector hacks.
-
-# 1.0.1
-
-* Fixes using `insertAfter` and `insertBefore` during iteration.
-
-# 1.0.0
-
-* Adds `clone` and `replaceWith` methods to nodes.
-* Adds `insertBefore` and `insertAfter` to containers.
-* Stabilises API.
-
-# 0.0.5
-
-* Fixes crash on extra whitespace inside a pseudo selector's parentheses.
-* Adds sort function to the container class.
-* Enables the parser to pass its input through without transforming.
-* Iteration-safe `each` and `eachInside`.
-
-# 0.0.4
-
-* Tidy up redundant duplication.
-* Fixes a bug where the parser would loop infinitely on universal selectors
-  inside pseudo selectors.
-* Adds `length` getter and `eachInside`, `map`, `reduce` to the container class.
-* When a selector has been removed from the tree, the root node will no longer
-  cast it to a string.
-* Adds node type iterators to the container class (e.g. `eachComment`).
-* Adds filter function to the container class.
-* Adds split function to the container class.
-* Create new node types by doing `parser.id(opts)` etc.
-* Adds support for pseudo classes anywhere in the selector.
-
-# 0.0.3
-
-* Adds `next` and `prev` to the node class.
-* Adds `first` and `last` getters to the container class.
-* Adds `every` and `some` iterators to the container class.
-* Add `empty` alias for `removeAll`.
-* Combinators are now types of node.
-* Fixes the at method so that it is not an alias for `index`.
-* Tidy up creation of new nodes in the parser.
-* Refactors how namespaces are handled for consistency & less redundant code.
-* Refactors AST to use `nodes` exclusively, and eliminates excessive nesting.
-* Fixes nested pseudo parsing.
-* Fixes whitespace parsing.
-
-# 0.0.2
-
-* Adds support for namespace selectors.
-* Adds support for selectors joined by escaped spaces - such as `.\31\ 0`.
-
-# 0.0.1
-
-* Initial release.
+- Initial release.
