@@ -3,12 +3,19 @@
 
 	"extends": "@ljharb",
 
-	"env": {
-		"browser": true,
-		"node": true,
+	"rules": {
+		"func-name-matching": 0,
+		"indent": [2, 4],
+		"no-new-func": [1],
 	},
 
-	"rules": {
-		"id-length": "off",
-	},
+	"overrides": [
+		{
+			"files": "test/**",
+			"rules": {
+				"max-lines-per-function": 0,
+				"strict": [0]
+			},
+		},
+	],
 }
