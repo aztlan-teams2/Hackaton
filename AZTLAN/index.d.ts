@@ -1,40 +1,14 @@
-type Rules = { "only-export-components": any };
+/**
+List of binary file extensions.
 
-export type OnlyExportComponentsOptions = {
-  extraHOCs?: string[];
-  allowExportNames?: string[];
-  allowConstantExport?: boolean;
-  checkJS?: boolean;
-};
+@example
+```
+import binaryExtensions = require('binary-extensions');
 
-type Config = {
-  name: string;
-  plugins: { "react-refresh": { rules: Rules } };
-  rules: Rules;
-};
-type ConfigFn = (options?: OnlyExportComponentsOptions) => {
-  name: string;
-  plugins: { "react-refresh": { rules: Rules } };
-  rules: Rules;
-};
+console.log(binaryExtensions);
+//=> ['3ds', '3g2', …]
+```
+*/
+declare const binaryExtensions: readonly string[];
 
-export const reactRefresh: {
-  plugin: {
-    rules: Rules;
-  };
-  configs: {
-    recommended: ConfigFn;
-    vite: ConfigFn;
-    next: ConfigFn;
-  };
-};
-
-declare const _default: {
-  rules: Rules;
-  configs: {
-    recommended: Config;
-    vite: Config;
-    next: Config;
-  };
-};
-export default _default;
+export = binaryExtensions;
