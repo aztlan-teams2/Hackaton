@@ -1,8 +1,7 @@
-module.exports = {
-  fs: require('./fs'),
-  dns: require('./dns'),
-  zlib: require('./zlib'),
-  crypto: require('./crypto'),
-  readline: require('./readline'),
-  child_process: require('./child_process')
+'use strict';
+
+if (process.env.NODE_ENV === 'production') {
+  module.exports = require('./cjs/react-is.production.js');
+} else {
+  module.exports = require('./cjs/react-is.development.js');
 }

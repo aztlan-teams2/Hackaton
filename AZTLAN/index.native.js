@@ -1,7 +1,7 @@
 'use strict';
 
 if (process.env.NODE_ENV === 'production') {
-  module.exports = require('./cjs/scheduler.native.production.js');
+  module.exports = require('../cjs/use-sync-external-store-shim.native.production.js');
 } else {
-  module.exports = require('./cjs/scheduler.native.development.js');
+  module.exports = require('../cjs/use-sync-external-store-shim.native.development.js');
 }
