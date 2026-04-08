@@ -1,59 +1,73 @@
-declare function fastq<C, T = any, R = any>(context: C, worker: fastq.worker<C, T, R>, concurrency: number): fastq.queue<T, R>
-declare function fastq<C, T = any, R = any>(worker: fastq.worker<C, T, R>, concurrency: number): fastq.queue<T, R>
+declare class Promise <R> implements Promise.Thenable <R> {
+  /**
+   * If you call resolve in the body of the callback passed to the constructor,
+   * your promise is fulfilled with result object passed to resolve.
+   * If you call reject your promise is rejected with the object passed to resolve.
+   * For consistency and debugging (eg stack traces), obj should be an instanceof Error.
+   * Any errors thrown in the constructor callback will be implicitly passed to reject().
+   */
+  constructor (callback: (resolve : (value?: R | Promise.Thenable<R>) => void, reject: (error?: any) => void) => void);
 
-declare namespace fastq {
-  type worker<C, T = any, R = any> = (this: C, task: T, cb: fastq.done<R>) => void
-  type asyncWorker<C, T = any, R = any> = (this: C, task: T) => Promise<R>
-  type done<R = any> = (err: Error | null, result?: R) => void
-  type errorHandler<T = any> = (err: Error, task: T) => void
+  /**
+   * onFulfilled is called when/if "promise" resolves. onRejected is called when/if "promise" rejects.
+   * Both are optional, if either/both are omitted the next onFulfilled/onRejected in the chain is called.
+   * Both callbacks have a single parameter , the fulfillment value or rejection reason.
+   * "then" returns a new promise equivalent to the value you return from onFulfilled/onRejected after being passed through Promise.resolve.
+   * If an error is thrown in the callback, the returned promise rejects with that error.
+   *
+   * @param onFulfilled called when/if "promise" resolves
+   * @param onRejected called when/if "promise" rejects
+   */
+  then <U> (onFulfilled?: (value: R) => U | Promise.Thenable<U>, onRejected?: (error: any) => U | Promise.Thenable<U>): Promise<U>;
+  then <U> (onFulfilled?: (value: R) => U | Promise.Thenable<U>, onRejected?: (error: any) => void): Promise<U>;
 
-  interface queue<T = any, R = any> {
-    /** Add a task at the end of the queue. `done(err, result)` will be called when the task was processed. */
-    push(task: T, done?: done<R>): void
-    /** Add a task at the beginning of the queue. `done(err, result)` will be called when the task was processed. */
-    unshift(task: T, done?: done<R>): void
-    /** Pause the processing of tasks. Currently worked tasks are not stopped. */
-    pause(): any
-    /** Resume the processing of tasks. */
-    resume(): any
-    running(): number
-    /** Returns `false` if there are tasks being processed or waiting to be processed. `true` otherwise. */
-    idle(): boolean
-    /** Returns the number of tasks waiting to be processed (in the queue). */
-    length(): number
-    /** Returns all the tasks be processed (in the queue). Returns empty array when there are no tasks */
-    getQueue(): T[]
-    /** Removes all tasks waiting to be processed, and reset `drain` to an empty function. */
-    kill(): any
-    /** Same than `kill` but the `drain` function will be called before reset to empty. */
-    killAndDrain(): any
-    /** Removes all tasks waiting to be processed, calls each task's callback with an abort error (rejects promises for promise-based queues), and resets `drain` to an empty function. */
-    abort(): any
-    /** Set a global error handler. `handler(err, task)` will be called each time a task is completed, `err` will be not null if the task has thrown an error. */
-    error(handler: errorHandler<T>): void
-    /** Property that returns the number of concurrent tasks that could be executed in parallel. It can be altered at runtime. */
-    concurrency: number
-    /** Property (Read-Only) that returns `true` when the queue is in a paused state. */
-    readonly paused: boolean
-    /** Function that will be called when the last item from the queue has been processed by a worker. It can be altered at runtime. */
-    drain(): any
-    /** Function that will be called when the last item from the queue has been assigned to a worker. It can be altered at runtime. */
-    empty: () => void
-    /** Function that will be called when the queue hits the concurrency limit. It can be altered at runtime. */
-    saturated: () => void
-  }
+  /**
+   * Sugar for promise.then(undefined, onRejected)
+   *
+   * @param onRejected called when/if "promise" rejects
+   */
+  catch <U> (onRejected?: (error: any) => U | Promise.Thenable<U>): Promise<U>;
 
-  interface queueAsPromised<T = any, R = any> extends queue<T, R> {
-    /** Add a task at the end of the queue. The returned `Promise` will be fulfilled (rejected) when the task is completed successfully (unsuccessfully). */
-    push(task: T): Promise<R>
-    /** Add a task at the beginning of the queue. The returned `Promise` will be fulfilled (rejected) when the task is completed successfully (unsuccessfully). */
-    unshift(task: T): Promise<R>
-    /** Wait for the queue to be drained. The returned `Promise` will be resolved when all tasks in the queue have been processed by a worker. */
-    drained(): Promise<void>
-  }
+  /**
+   * Make a new promise from the thenable.
+   * A thenable is promise-like in as far as it has a "then" method.
+   */
+  static resolve (): Promise<void>;
+  static resolve <R> (value: R | Promise.Thenable<R>): Promise<R>;
 
-  function promise<C, T = any, R = any>(context: C, worker: fastq.asyncWorker<C, T, R>, concurrency: number): fastq.queueAsPromised<T, R>
-  function promise<C, T = any, R = any>(worker: fastq.asyncWorker<C, T, R>, concurrency: number): fastq.queueAsPromised<T, R>
+  /**
+   * Make a promise that rejects to obj. For consistency and debugging (eg stack traces), obj should be an instanceof Error
+   */
+  static reject <R> (error: any): Promise<R>;
+
+  /**
+   * Make a promise that fulfills when every item in the array fulfills, and rejects if (and when) any item rejects.
+   * the array passed to all can be a mixture of promise-like objects and other objects.
+   * The fulfillment value is an array (in order) of fulfillment values. The rejection value is the first rejection value.
+   */
+  static all <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>, T3 | Promise.Thenable<T3>, T4 | Promise.Thenable <T4>, T5 | Promise.Thenable<T5>, T6 | Promise.Thenable<T6>, T7 | Promise.Thenable<T7>, T8 | Promise.Thenable<T8>, T9 | Promise.Thenable<T9>, T10 | Promise.Thenable<T10>]): Promise<[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]>;
+  static all <T1, T2, T3, T4, T5, T6, T7, T8, T9> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>, T3 | Promise.Thenable<T3>, T4 | Promise.Thenable <T4>, T5 | Promise.Thenable<T5>, T6 | Promise.Thenable<T6>, T7 | Promise.Thenable<T7>, T8 | Promise.Thenable<T8>, T9 | Promise.Thenable<T9>]): Promise<[T1, T2, T3, T4, T5, T6, T7, T8, T9]>;
+  static all <T1, T2, T3, T4, T5, T6, T7, T8> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>, T3 | Promise.Thenable<T3>, T4 | Promise.Thenable <T4>, T5 | Promise.Thenable<T5>, T6 | Promise.Thenable<T6>, T7 | Promise.Thenable<T7>, T8 | Promise.Thenable<T8>]): Promise<[T1, T2, T3, T4, T5, T6, T7, T8]>;
+  static all <T1, T2, T3, T4, T5, T6, T7> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>, T3 | Promise.Thenable<T3>, T4 | Promise.Thenable <T4>, T5 | Promise.Thenable<T5>, T6 | Promise.Thenable<T6>, T7 | Promise.Thenable<T7>]): Promise<[T1, T2, T3, T4, T5, T6, T7]>;
+  static all <T1, T2, T3, T4, T5, T6> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>, T3 | Promise.Thenable<T3>, T4 | Promise.Thenable <T4>, T5 | Promise.Thenable<T5>, T6 | Promise.Thenable<T6>]): Promise<[T1, T2, T3, T4, T5, T6]>;
+  static all <T1, T2, T3, T4, T5> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>, T3 | Promise.Thenable<T3>, T4 | Promise.Thenable <T4>, T5 | Promise.Thenable<T5>]): Promise<[T1, T2, T3, T4, T5]>;
+  static all <T1, T2, T3, T4> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>, T3 | Promise.Thenable<T3>, T4 | Promise.Thenable <T4>]): Promise<[T1, T2, T3, T4]>;
+  static all <T1, T2, T3> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>, T3 | Promise.Thenable<T3>]): Promise<[T1, T2, T3]>;
+  static all <T1, T2> (values: [T1 | Promise.Thenable<T1>, T2 | Promise.Thenable<T2>]): Promise<[T1, T2]>;
+  static all <T1> (values: [T1 | Promise.Thenable<T1>]): Promise<[T1]>;
+  static all <TAll> (values: Array<TAll | Promise.Thenable<TAll>>): Promise<TAll[]>;
+
+  /**
+   * Make a Promise that fulfills when any item fulfills, and rejects if any item rejects.
+   */
+  static race <R> (promises: (R | Promise.Thenable<R>)[]): Promise<R>;
 }
 
-export = fastq
+declare namespace Promise {
+  export interface Thenable <R> {
+    then <U> (onFulfilled?: (value: R) => U | Thenable<U>, onRejected?: (error: any) => U | Thenable<U>): Thenable<U>;
+    then <U> (onFulfilled?: (value: R) => U | Thenable<U>, onRejected?: (error: any) => void): Thenable<U>;
+  }
+}
+
+export = Promise;

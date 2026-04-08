@@ -1,2 +1,7 @@
-.nyc_output/
-coverage/
+.git*
+test/
+test-browser/
+build/
+.travis.yml
+*.swp
+Makefile

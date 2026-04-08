@@ -1,40 +1,61 @@
-# @jridgewell/resolve-uri
+# Standard Schema Utils
 
-> Resolve a URI relative to an optional base URI
-
-Resolve any combination of absolute URIs, protocol-realtive URIs, absolute paths, or relative paths.
-
-## Installation
+There are two common tasks that third-party libraries perform after validation fails. The first is to flatten the issues by creating a dot path to more easily associate the issues with the input data. This is commonly used in form libraries. The second is to throw an error that contains all the issue information. To simplify both tasks, Standard Schema also ships a utils package that provides a `getDotPath` function and a `SchemaError` class.
 
 ```sh
-npm install @jridgewell/resolve-uri
+npm install @standard-schema/utils   # npm
+yarn add @standard-schema/utils      # yarn
+pnpm add @standard-schema/utils      # pnpm
+bun add @standard-schema/utils       # bun
+deno add jsr:@standard-schema/utils  # deno
 ```
 
-## Usage
+## Get Dot Path
 
-```typescript
-function resolve(input: string, base?: string): string;
+To generate a dot path, simply pass an issue to the `getDotPath` function. If the issue does not contain a path or the path contains a key that is not of type `string` or `number`, the function returns `null`.
+
+```ts
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import { getDotPath } from "@standard-schema/utils";
+
+async function getFormErrors(schema: StandardSchemaV1, data: unknown) {
+  const result = await schema["~standard"].validate(data);
+  const formErrors: string[] = [];
+  const fieldErrors: Record<string, string[]> = {};
+  if (result.issues) {
+    for (const issue of result.issues) {
+      const dotPath = getDotPath(issue);
+      if (dotPath) {
+        if (fieldErrors[dotPath]) {
+          fieldErrors[dotPath].push(issue.message);
+        } else {
+          fieldErrors[dotPath] = [issue.message];
+        }
+      } else {
+        formErrors.push(issue.message);
+      }
+    }
+  }
+  return { formErrors, fieldErrors };
+}
 ```
 
-```js
-import resolve from '@jridgewell/resolve-uri';
+## Schema Error
 
-resolve('foo', 'https://example.com'); // => 'https://example.com/foo'
+To throw an error that contains all issue information, simply pass the issues of the failed schema validation to the `SchemaError` class. The `SchemaError` class extends the `Error` class with an `issues` property that contains all the issues.
+
+```ts
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import { SchemaError } from "@standard-schema/utils";
+
+async function validateInput<TSchema extends StandardSchemaV1>(
+  schema: TSchema,
+  data: unknown,
+): Promise<StandardSchemaV1.InferOutput<TSchema>> {
+  const result = await schema["~standard"].validate(data);
+  if (result.issues) {
+    throw new SchemaError(result.issues);
+  }
+  return result.value;
+}
 ```
-
-| Input                 | Base                    | Resolution                     | Explanation                                                  |
-|-----------------------|-------------------------|--------------------------------|--------------------------------------------------------------|
-| `https://example.com` | _any_                   | `https://example.com/`         | Input is normalized only                                     |
-| `//example.com`       | `https://base.com/`     | `https://example.com/`         | Input inherits the base's protocol                           |
-| `//example.com`       | _rest_                  | `//example.com/`               | Input is normalized only                                     |
-| `/example`            | `https://base.com/`     | `https://base.com/example`     | Input inherits the base's origin                             |
-| `/example`            | `//base.com/`           | `//base.com/example`           | Input inherits the base's host and remains protocol relative |
-| `/example`            | _rest_                  | `/example`                     | Input is normalized only                                     |
-| `example`             | `https://base.com/dir/` | `https://base.com/dir/example` | Input is joined with the base                                |
-| `example`             | `https://base.com/file` | `https://base.com/example`     | Input is joined with the base without its file               |
-| `example`             | `//base.com/dir/`       | `//base.com/dir/example`       | Input is joined with the base's last directory               |
-| `example`             | `//base.com/file`       | `//base.com/example`           | Input is joined with the base without its file               |
-| `example`             | `/base/dir/`            | `/base/dir/example`            | Input is joined with the base's last directory               |
-| `example`             | `/base/file`            | `/base/example`                | Input is joined with the base without its file               |
-| `example`             | `base/dir/`             | `base/dir/example`             | Input is joined with the base's last directory               |
-| `example`             | `base/file`             | `base/example`                 | Input is joined with the base without its file               |

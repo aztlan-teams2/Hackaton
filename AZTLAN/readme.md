@@ -1,72 +1,54 @@
-# resolve-from [![Build Status](https://travis-ci.org/sindresorhus/resolve-from.svg?branch=master)](https://travis-ci.org/sindresorhus/resolve-from)
+# import-fresh
 
-> Resolve the path of a module like [`require.resolve()`](https://nodejs.org/api/globals.html#globals_require_resolve) but from a given path
+> Import a module while bypassing the [cache](https://nodejs.org/api/modules.html#modules_caching)
 
+Useful for testing purposes when you need to freshly import a module.
+
+## ESM
+
+For ESM, you can use this snippet:
+
+```js
+const importFresh = moduleName => import(`${moduleName}?${Date.now()}`);
+
+const {default: foo} = await importFresh('foo');
+```
+
+**This snippet causes a memory leak, so only use it for short-lived tests.**
 
 ## Install
 
+```sh
+npm install import-fresh
 ```
-$ npm install resolve-from
-```
-
 
 ## Usage
 
 ```js
-const resolveFrom = require('resolve-from');
-
-// There is a file at `./foo/bar.js`
-
-resolveFrom('foo', './bar');
-//=> '/Users/sindresorhus/dev/test/foo/bar.js'
+// foo.js
+let i = 0;
+module.exports = () => ++i;
 ```
-
-
-## API
-
-### resolveFrom(fromDir, moduleId)
-
-Like `require()`, throws when the module can't be found.
-
-### resolveFrom.silent(fromDir, moduleId)
-
-Returns `null` instead of throwing when the module can't be found.
-
-#### fromDir
-
-Type: `string`
-
-Directory to resolve from.
-
-#### moduleId
-
-Type: `string`
-
-What you would use in `require()`.
-
-
-## Tip
-
-Create a partial using a bound function if you want to resolve from the same `fromDir` multiple times:
 
 ```js
-const resolveFromFoo = resolveFrom.bind(null, 'foo');
+const importFresh = require('import-fresh');
 
-resolveFromFoo('./bar');
-resolveFromFoo('./baz');
+require('./foo')();
+//=> 1
+
+require('./foo')();
+//=> 2
+
+importFresh('./foo')();
+//=> 1
+
+importFresh('./foo')();
+//=> 1
 ```
-
 
 ## Related
 
-- [resolve-cwd](https://github.com/sindresorhus/resolve-cwd) - Resolve the path of a module from the current working directory
+- [clear-module](https://github.com/sindresorhus/clear-module) - Clear a module from the import cache
 - [import-from](https://github.com/sindresorhus/import-from) - Import a module from a given path
 - [import-cwd](https://github.com/sindresorhus/import-cwd) - Import a module from the current working directory
-- [resolve-pkg](https://github.com/sindresorhus/resolve-pkg) - Resolve the path of a package regardless of it having an entry point
-- [import-lazy](https://github.com/sindresorhus/import-lazy) - Import a module lazily
-- [resolve-global](https://github.com/sindresorhus/resolve-global) - Resolve the path of a globally installed module
-
-
-## License
-
-MIT © [Sindre Sorhus](https://sindresorhus.com)
+- [import-lazy](https://github.com/sindresorhus/import-lazy) - Import modules lazily
