@@ -1,11 +1,14 @@
-const neostandard = require('neostandard')
+'use strict'
+
+const base = require('neostandard')({})
 
 module.exports = [
-  ...neostandard(),
+  ...base,
   {
-    name: 'node-0.10-compatibility',
+    name: 'old-standard',
     rules: {
-      'object-shorthand': 'off' // Disable ES6 object shorthand for Node.js 0.10 compatibility
+      'no-var': 'off',
+      'object-shorthand': 'off',
     }
   }
 ]

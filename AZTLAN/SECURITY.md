@@ -1,11 +1,15 @@
-# Security
+# Security Policy
 
-Please file a private vulnerability via GitHub, email [@ljharb](https://github.com/ljharb), or see https://tidelift.com/security if you have a potential security vulnerability to report.
+## Supported Versions
 
-## Incident Response
+Use this section to tell people about which versions of your project are
+currently being supported with security updates.
 
-See our [Incident Response Process](.github/INCIDENT_RESPONSE_PROCESS.md).
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.x     | :white_check_mark: |
+| < 1.0   | :x:                |
 
-## Threat Model
+## Reporting a Vulnerability
 
-See [THREAT_MODEL.md](./THREAT_MODEL.md).
+Please report all vulnerabilities at [https://github.com/mcollina/fastq/security](https://github.com/mcollina/fastq/security).

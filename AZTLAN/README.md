@@ -1,15 +1,12 @@
-# Installation
-> `npm install --save @types/json-schema`
+# d3-format
 
-# Summary
-This package contains type definitions for json-schema (https://github.com/kriszyp/json-schema).
+<a href="https://d3js.org"><img src="https://github.com/d3/d3/raw/main/docs/public/logo.svg" width="256" height="256"></a>
 
-# Details
-Files were exported from https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/json-schema.
+This module formats numbers for human consumption, with a consistent output allowing comparison. Grouped digits, currencies, scientific notation…
 
-### Additional Details
- * Last updated: Tue, 07 Nov 2023 03:09:37 GMT
- * Dependencies: none
+## Resources
 
-# Credits
-These definitions were written by [Boris Cherny](https://github.com/bcherny), [Lucian Buzzo](https://github.com/lucianbuzzo), [Roland Groza](https://github.com/rolandjitsu), and [Jason Kwok](https://github.com/JasonHK).
+- [Documentation](https://d3js.org/d3-format)
+- [Examples](https://observablehq.com/@d3/d3-format)
+- [Releases](https://github.com/d3/d3-format/releases)
+- [Getting help](https://d3js.org/community)
