@@ -1,73 +1,89 @@
-# Pirates [![Coverage][codecov-badge]][codecov-link]
+# fsevents
 
-### Properly hijack require
+Native access to MacOS FSEvents in [Node.js](https://nodejs.org/)
 
-This library allows to add custom require hooks, which do not interfere with other require hooks.
+The FSEvents API in MacOS allows applications to register for notifications of
+changes to a given directory tree. It is a very fast and lightweight alternative
+to kqueue.
 
-This library only works with commonJS.
-
-[codecov-badge]: https://img.shields.io/codecov/c/github/danez/pirates/master.svg?style=flat "codecov"
-[codecov-link]: https://codecov.io/gh/danez/pirates "codecov"
-
-## Why?
-
-Two reasons:
-1. Babel and istanbul were breaking each other.
-2. Everyone seemed to re-invent the wheel on this, and everyone wanted a solution that was DRY, simple, easy to use,
-and made everything Just Work™, while allowing multiple require hooks, in a fashion similar to calling `super`.
-
-For some context, see [the Babel issue thread][] which started this all, then [the nyc issue thread][], where
-discussion was moved (as we began to discuss just using the code nyc had developed), and finally to [#1][issue-1]
-where discussion was finally moved.
-
-[the Babel issue thread]: https://github.com/babel/babel/pull/3062 "Babel Issue Thread"
-[the nyc issue thread]: https://github.com/bcoe/nyc/issues/70 "NYC Issue Thread"
-[issue-1]: https://github.com/danez/pirates/issues/1 "Issue #1"
-
-## Installation
-
-    npm install --save pirates
+This is a low-level library. For a cross-platform file watching module that
+uses fsevents, check out [Chokidar](https://github.com/paulmillr/chokidar).
 
 ## Usage
 
-Using pirates is really easy:
-```javascript
-// my-module/register.js
-const addHook = require('pirates').addHook;
-// Or if you use ES modules
-// import { addHook } from 'pirates';
-
-function matcher(filename) {
-  // Here, you can inspect the filename to determine if it should be hooked or
-  // not. Just return a truthy/falsey. Files in node_modules are automatically ignored,
-  // unless otherwise specified in options (see below).
-
-  // TODO: Implement your logic here
-  return true;
-}
-
-const revert = addHook(
-  (code, filename) => code.replace('@@foo', 'console.log(\'foo\');'),
-  { exts: ['.js'], matcher }
-);
-
-// And later, if you want to un-hook require, you can just do:
-revert();
+```sh
+npm install fsevents
 ```
 
-## API
+Supports only **Node.js v8.16 and higher**.
 
-### pirates.addHook(hook, [opts={ [matcher: true], [exts: ['.js']], [ignoreNodeModules: true] }]);
-Add a require hook. `hook` must be a function that takes `(code, filename)`, and returns the modified code. `opts` is
-an optional options object. Available options are: `matcher`, which is a function that accepts a filename, and
-returns a truthy value if the file should be hooked (defaults to a function that always returns true), falsey if
-otherwise; `exts`, which is an array of extensions to hook, they should begin with `.` (defaults to `['.js']`);
-`ignoreNodeModules`, if true, any file in a `node_modules` folder wont be hooked (the matcher also wont be called),
-if false, then the matcher will be called for any files in `node_modules` (defaults to true).
+```js
+const fsevents = require('fsevents');
 
+// To start observation
+const stop = fsevents.watch(__dirname, (path, flags, id) => {
+  const info = fsevents.getInfo(path, flags);
+});
 
-## Projects that use Pirates
+// To end observation
+stop();
+```
 
-See the [wiki page](https://github.com/danez/pirates/wiki/Projects-using-Pirates). If you add Pirates to your project,
-(And you should! It works best if everyone uses it. Then we can have a happy world full of happy require hooks!), please
-add yourself to the wiki.
+> **Important note:** The API behaviour is slightly different from typical JS APIs. The `stop` function **must** be
+> retrieved and stored somewhere, even if you don't plan to stop the watcher. If you forget it, the garbage collector
+> will eventually kick in, the watcher will be unregistered, and your callbacks won't be called anymore.
+
+The callback passed as the second parameter to `.watch` get's called whenever the operating system detects a
+a change in the file system. It takes three arguments:
+
+###### `fsevents.watch(dirname: string, (path: string, flags: number, id: string) => void): () => Promise<undefined>`
+
+ * `path: string` - the item in the filesystem that have been changed
+ * `flags: number` - a numeric value describing what the change was
+ * `id: string` - an unique-id identifying this specific event
+
+ Returns closer callback which when called returns a Promise resolving when the watcher process has been shut down.
+
+###### `fsevents.getInfo(path: string, flags: number, id: string): FsEventInfo`
+
+The `getInfo` function takes the `path`, `flags` and `id` arguments and converts those parameters into a structure
+that is easier to digest to determine what the change was.
+
+The `FsEventsInfo` has the following shape:
+
+```js
+/**
+ * @typedef {'created'|'modified'|'deleted'|'moved'|'root-changed'|'cloned'|'unknown'} FsEventsEvent
+ * @typedef {'file'|'directory'|'symlink'} FsEventsType
+ */
+{
+  "event": "created", // {FsEventsEvent}
+  "path": "file.txt",
+  "type": "file",    // {FsEventsType}
+  "changes": {
+    "inode": true,   // Had iNode Meta-Information changed
+    "finder": false, // Had Finder Meta-Data changed
+    "access": false, // Had access permissions changed
+    "xattrs": false  // Had xAttributes changed
+  },
+  "flags": 0x100000000
+}
+```
+
+## Changelog
+
+- v2.3 supports Apple Silicon ARM CPUs
+- v2 supports node 8.16+ and reduces package size massively
+- v1.2.8 supports node 6+
+- v1.2.7 supports node 4+
+
+## Troubleshooting
+
+- I'm getting `EBADPLATFORM` `Unsupported platform for fsevents` error.
+- It's fine, nothing is broken. fsevents is macos-only. Other platforms are skipped. If you want to hide this warning, report a bug to NPM bugtracker asking them to hide ebadplatform warnings by default.
+
+## License
+
+The MIT License Copyright (C) 2010-2020 by Philipp Dunkel, Ben Noordhuis, Elan Shankar, Paul Miller — see LICENSE file.
+
+Visit our [GitHub page](https://github.com/fsevents/fsevents) and [NPM Page](https://npmjs.org/package/fsevents)

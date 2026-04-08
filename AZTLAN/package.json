@@ -1,43 +1,62 @@
 {
-  "name": "pirates",
-  "description": "Properly hijack require, i.e., properly define require hooks and customizations",
-  "main": "lib/index.js",
-  "types": "index.d.ts",
-  "scripts": {
-    "test": "ava"
-  },
-  "files": [
-    "lib",
-    "index.d.ts"
+  "name": "fsevents",
+  "version": "2.3.3",
+  "description": "Native Access to MacOS FSEvents",
+  "main": "fsevents.js",
+  "types": "fsevents.d.ts",
+  "os": [
+    "darwin"
   ],
+  "files": [
+    "fsevents.d.ts",
+    "fsevents.js",
+    "fsevents.node"
+  ],
+  "engines": {
+    "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
+  },
+  "scripts": {
+    "clean": "node-gyp clean && rm -f fsevents.node",
+    "build": "node-gyp clean && rm -f fsevents.node && node-gyp rebuild && node-gyp clean",
+    "test": "/bin/bash ./test.sh 2>/dev/null",
+    "prepublishOnly": "npm run build"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/danez/pirates.git"
+    "url": "https://github.com/fsevents/fsevents.git"
   },
-  "engines": {
-    "node": ">= 6"
-  },
-  "author": {
-    "name": "Ari Porad",
-    "email": "ari@ariporad.com",
-    "url": "http://ariporad.com"
-  },
-  "devDependencies": {
-    "ava": "1.4.1",
-    "decache": "4.6.2"
-  },
+  "keywords": [
+    "fsevents",
+    "mac"
+  ],
+  "contributors": [
+    {
+      "name": "Philipp Dunkel",
+      "email": "pip@pipobscure.com"
+    },
+    {
+      "name": "Ben Noordhuis",
+      "email": "info@bnoordhuis.nl"
+    },
+    {
+      "name": "Elan Shankar",
+      "email": "elan.shanker@gmail.com"
+    },
+    {
+      "name": "Miroslav Bajtoš",
+      "email": "mbajtoss@gmail.com"
+    },
+    {
+      "name": "Paul Miller",
+      "url": "https://paulmillr.com"
+    }
+  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/danez/pirates/issues"
+    "url": "https://github.com/fsevents/fsevents/issues"
   },
-  "homepage": "https://github.com/danez/pirates#readme",
-  "ava": {
-    "files": [
-      "test/*.js"
-    ],
-    "sources": [
-      "lib/**/*.js"
-    ]
-  },
-  "version": "4.0.7"
+  "homepage": "https://github.com/fsevents/fsevents",
+  "devDependencies": {
+    "node-gyp": "^9.4.0"
+  }
 }
