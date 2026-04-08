@@ -1,93 +1,59 @@
-# p-locate [![Build Status](https://travis-ci.com/sindresorhus/p-locate.svg?branch=master)](https://travis-ci.com/github/sindresorhus/p-locate)
+# ms
 
-> Get the first fulfilled promise that satisfies the provided testing function
+![CI](https://github.com/vercel/ms/workflows/CI/badge.svg)
 
-Think of it like an async version of [`Array#find`](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
+Use this package to easily convert various time formats to milliseconds.
 
-## Install
-
-```
-$ npm install p-locate
-```
-
-## Usage
-
-Here we find the first file that exists on disk, in array order.
+## Examples
 
 ```js
-const pathExists = require('path-exists');
-const pLocate = require('p-locate');
-
-const files = [
-	'unicorn.png',
-	'rainbow.png', // Only this one actually exists on disk
-	'pony.png'
-];
-
-(async () => {
-	const foundPath = await pLocate(files, file => pathExists(file));
-
-	console.log(foundPath);
-	//=> 'rainbow'
-})();
+ms('2 days')  // 172800000
+ms('1d')      // 86400000
+ms('10h')     // 36000000
+ms('2.5 hrs') // 9000000
+ms('2h')      // 7200000
+ms('1m')      // 60000
+ms('5s')      // 5000
+ms('1y')      // 31557600000
+ms('100')     // 100
+ms('-3 days') // -259200000
+ms('-1h')     // -3600000
+ms('-200')    // -200
 ```
 
-*The above is just an example. Use [`locate-path`](https://github.com/sindresorhus/locate-path) if you need this.*
+### Convert from Milliseconds
 
-## API
+```js
+ms(60000)             // "1m"
+ms(2 * 60000)         // "2m"
+ms(-3 * 60000)        // "-3m"
+ms(ms('10 hours'))    // "10h"
+```
 
-### pLocate(input, tester, options?)
+### Time Format Written-Out
 
-Returns a `Promise` that is fulfilled when `tester` resolves to `true` or the iterable is done, or rejects if any of the promises reject. The fulfilled value is the current iterable value or `undefined` if `tester` never resolved to `true`.
+```js
+ms(60000, { long: true })             // "1 minute"
+ms(2 * 60000, { long: true })         // "2 minutes"
+ms(-3 * 60000, { long: true })        // "-3 minutes"
+ms(ms('10 hours'), { long: true })    // "10 hours"
+```
 
-#### input
+## Features
 
-Type: `Iterable<Promise | unknown>`
+- Works both in [Node.js](https://nodejs.org) and in the browser
+- If a number is supplied to `ms`, a string with a unit is returned
+- If a string that contains the number is supplied, it returns it as a number (e.g.: it returns `100` for `'100'`)
+- If you pass a string with a number and a valid unit, the number of equivalent milliseconds is returned
 
-An iterable of promises/values to test.
+## Related Packages
 
-#### tester(element)
+- [ms.macro](https://github.com/knpwrs/ms.macro) - Run `ms` as a macro at build-time.
 
-Type: `Function`
+## Caught a Bug?
 
-This function will receive resolved values from `input` and is expected to return a `Promise<boolean>` or `boolean`.
+1. [Fork](https://help.github.com/articles/fork-a-repo/) this repository to your own GitHub account and then [clone](https://help.github.com/articles/cloning-a-repository/) it to your local device
+2. Link the package to the global module directory: `npm link`
+3. Within the module you want to test your local development instance of ms, just link it to the dependencies: `npm link ms`. Instead of the default one from npm, Node.js will now use your clone of ms!
 
-#### options
-
-Type: `object`
-
-##### concurrency
-
-Type: `number`\
-Default: `Infinity`\
-Minimum: `1`
-
-Number of concurrently pending promises returned by `tester`.
-
-##### preserveOrder
-
-Type: `boolean`\
-Default: `true`
-
-Preserve `input` order when searching.
-
-Disable this to improve performance if you don't care about the order.
-
-## Related
-
-- [p-map](https://github.com/sindresorhus/p-map) - Map over promises concurrently
-- [p-filter](https://github.com/sindresorhus/p-filter) - Filter promises concurrently
-- [p-any](https://github.com/sindresorhus/p-any) - Wait for any promise to be fulfilled
-- [More…](https://github.com/sindresorhus/promise-fun)
-
----
-
-<div align="center">
-	<b>
-		<a href="https://tidelift.com/subscription/pkg/npm-p-locate?utm_source=npm-p-locate&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
-	</b>
-	<br>
-	<sub>
-		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
-	</sub>
-</div>
+As always, you can run the tests using: `npm test`
