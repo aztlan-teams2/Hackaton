@@ -1,151 +1,22 @@
-### Version 4.0.0 (2018-01-28) ###
+# Changelog
 
-- Added: Support for ES2018. The only change needed was recognizing the `s`
-  regex flag.
-- Changed: _All_ tokens returned by the `matchToToken` function now have a
-  `closed` property. It is set to `undefined` for the tokens where “closed”
-  doesn’t make sense. This means that all tokens objects have the same shape,
-  which might improve performance.
+All notable changes to this project will be documented in this file.
 
-These are the breaking changes:
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-- `'/a/s'.match(jsTokens)` no longer returns `['/', 'a', '/', 's']`, but
-  `['/a/s']`. (There are of course other variations of this.)
-- Code that rely on some token objects not having the `closed` property could
-  now behave differently.
+## v1.0.0 - 2022-01-02
 
+### Commits
 
-### Version 3.0.2 (2017-06-28) ###
-
-- No code changes. Just updates to the readme.
-
-
-### Version 3.0.1 (2017-01-30) ###
-
-- Fixed: ES2015 unicode escapes with more than 6 hex digits are now matched
-  correctly.
-
-
-### Version 3.0.0 (2017-01-11) ###
-
-This release contains one breaking change, that should [improve performance in
-V8][v8-perf]:
-
-> So how can you, as a JavaScript developer, ensure that your RegExps are fast?
-> If you are not interested in hooking into RegExp internals, make sure that
-> neither the RegExp instance, nor its prototype is modified in order to get the
-> best performance:
->
-> ```js
-> var re = /./g;
-> re.exec('');  // Fast path.
-> re.new_property = 'slow';
-> ```
-
-This module used to export a single regex, with `.matchToToken` bolted
-on, just like in the above example. This release changes the exports of
-the module to avoid this issue.
-
-Before:
-
-```js
-import jsTokens from "js-tokens"
-// or:
-var jsTokens = require("js-tokens")
-var matchToToken = jsTokens.matchToToken
-```
-
-After:
-
-```js
-import jsTokens, {matchToToken} from "js-tokens"
-// or:
-var jsTokens = require("js-tokens").default
-var matchToToken = require("js-tokens").matchToToken
-```
-
-[v8-perf]: http://v8project.blogspot.se/2017/01/speeding-up-v8-regular-expressions.html
-
-
-### Version 2.0.0 (2016-06-19) ###
-
-- Added: Support for ES2016. In other words, support for the `**` exponentiation
-  operator.
-
-These are the breaking changes:
-
-- `'**'.match(jsTokens)` no longer returns `['*', '*']`, but `['**']`.
-- `'**='.match(jsTokens)` no longer returns `['*', '*=']`, but `['**=']`.
-
-
-### Version 1.0.3 (2016-03-27) ###
-
-- Improved: Made the regex ever so slightly smaller.
-- Updated: The readme.
-
-
-### Version 1.0.2 (2015-10-18) ###
-
-- Improved: Limited npm package contents for a smaller download. Thanks to
-  @zertosh!
-
-
-### Version 1.0.1 (2015-06-20) ###
-
-- Fixed: Declared an undeclared variable.
-
-
-### Version 1.0.0 (2015-02-26) ###
-
-- Changed: Merged the 'operator' and 'punctuation' types into 'punctuator'. That
-  type is now equivalent to the Punctuator token in the ECMAScript
-  specification. (Backwards-incompatible change.)
-- Fixed: A `-` followed by a number is now correctly matched as a punctuator
-  followed by a number. It used to be matched as just a number, but there is no
-  such thing as negative number literals. (Possibly backwards-incompatible
-  change.)
-
-
-### Version 0.4.1 (2015-02-21) ###
-
-- Added: Support for the regex `u` flag.
-
-
-### Version 0.4.0 (2015-02-21) ###
-
-- Improved: `jsTokens.matchToToken` performance.
-- Added: Support for octal and binary number literals.
-- Added: Support for template strings.
-
-
-### Version 0.3.1 (2015-01-06) ###
-
-- Fixed: Support for unicode spaces. They used to be allowed in names (which is
-  very confusing), and some unicode newlines were wrongly allowed in strings and
-  regexes.
-
-
-### Version 0.3.0 (2014-12-19) ###
-
-- Changed: The `jsTokens.names` array has been replaced with the
-  `jsTokens.matchToToken` function. The capturing groups of `jsTokens` are no
-  longer part of the public API; instead use said function. See this [gist] for
-  an example. (Backwards-incompatible change.)
-- Changed: The empty string is now considered an “invalid” token, instead an
-  “empty” token (its own group). (Backwards-incompatible change.)
-- Removed: component support. (Backwards-incompatible change.)
-
-[gist]: https://gist.github.com/lydell/be49dbf80c382c473004
-
-
-### Version 0.2.0 (2014-06-19) ###
-
-- Changed: Match ES6 function arrows (`=>`) as an operator, instead of its own
-  category (“functionArrow”), for simplicity. (Backwards-incompatible change.)
-- Added: ES6 splats (`...`) are now matched as an operator (instead of three
-  punctuations). (Backwards-incompatible change.)
-
-
-### Version 0.1.0 (2014-03-08) ###
-
-- Initial release.
+- Tests [`e2f59ad`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/e2f59ad74e2ae0f5f4899fcde6a6f693ab7cc074)
+- Initial commit [`dc222aa`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/dc222aad3c0b940d8d3af1ca9937d108bd2dc4b9)
+- [meta] do not publish workflow files [`5ef77f7`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/5ef77f7cb6946d16ee38672be9ec0f1bbdf63262)
+- npm init [`992b068`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/992b068503a461f7e8676f40ca2aab255fd8d6ff)
+- read me [`6c9afa9`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/6c9afa9fabc8eaf0814aaed6dd01e6df0931b76d)
+- Initial implementation [`2f98925`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/2f9892546396d4ab0ad9f1ff83e76c3f01234ae8)
+- [meta] add `auto-changelog` [`6c476ae`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/6c476ae1ed7ce68b0480344f090ac2844f35509d)
+- [Dev Deps] add `eslint`, `@ljharb/eslint-config` [`d0fffc8`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/d0fffc886d25fba119355520750a909d64da0087)
+- Only apps should have lockfiles [`ab318ed`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/ab318ed7ae62f6c2c0e80a50398d40912afd8f69)
+- [meta] add `safe-publish-latest` [`2bb23b3`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/2bb23b3ebab02dc4135c4cdf0217db82835b9fca)
+- [meta] add `sideEffects` flag [`600223b`](https://github.com/inspect-js/node-supports-preserve-symlinks-flag/commit/600223ba24f30779f209d9097721eff35ed62741)
