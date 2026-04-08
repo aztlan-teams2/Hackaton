@@ -1,76 +1,93 @@
-# supports-color [![Build Status](https://travis-ci.org/chalk/supports-color.svg?branch=master)](https://travis-ci.org/chalk/supports-color)
+# p-locate [![Build Status](https://travis-ci.com/sindresorhus/p-locate.svg?branch=master)](https://travis-ci.com/github/sindresorhus/p-locate)
 
-> Detect whether a terminal supports color
+> Get the first fulfilled promise that satisfies the provided testing function
 
+Think of it like an async version of [`Array#find`](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
 
 ## Install
 
 ```
-$ npm install supports-color
+$ npm install p-locate
 ```
-
 
 ## Usage
 
+Here we find the first file that exists on disk, in array order.
+
 ```js
-const supportsColor = require('supports-color');
+const pathExists = require('path-exists');
+const pLocate = require('p-locate');
 
-if (supportsColor.stdout) {
-	console.log('Terminal stdout supports color');
-}
+const files = [
+	'unicorn.png',
+	'rainbow.png', // Only this one actually exists on disk
+	'pony.png'
+];
 
-if (supportsColor.stdout.has256) {
-	console.log('Terminal stdout supports 256 colors');
-}
+(async () => {
+	const foundPath = await pLocate(files, file => pathExists(file));
 
-if (supportsColor.stderr.has16m) {
-	console.log('Terminal stderr supports 16 million colors (truecolor)');
-}
+	console.log(foundPath);
+	//=> 'rainbow'
+})();
 ```
 
+*The above is just an example. Use [`locate-path`](https://github.com/sindresorhus/locate-path) if you need this.*
 
 ## API
 
-Returns an `Object` with a `stdout` and `stderr` property for testing either streams. Each property is an `Object`, or `false` if color is not supported.
+### pLocate(input, tester, options?)
 
-The `stdout`/`stderr` objects specifies a level of support for color through a `.level` property and a corresponding flag:
+Returns a `Promise` that is fulfilled when `tester` resolves to `true` or the iterable is done, or rejects if any of the promises reject. The fulfilled value is the current iterable value or `undefined` if `tester` never resolved to `true`.
 
-- `.level = 1` and `.hasBasic = true`: Basic color support (16 colors)
-- `.level = 2` and `.has256 = true`: 256 color support
-- `.level = 3` and `.has16m = true`: Truecolor support (16 million colors)
+#### input
 
+Type: `Iterable<Promise | unknown>`
 
-## Info
+An iterable of promises/values to test.
 
-It obeys the `--color` and `--no-color` CLI flags.
+#### tester(element)
 
-For situations where using `--color` is not possible, use the environment variable `FORCE_COLOR=1` (level 1), `FORCE_COLOR=2` (level 2), or `FORCE_COLOR=3` (level 3) to forcefully enable color, or `FORCE_COLOR=0` to forcefully disable. The use of `FORCE_COLOR` overrides all other color support checks.
+Type: `Function`
 
-Explicit 256/Truecolor mode can be enabled using the `--color=256` and `--color=16m` flags, respectively.
+This function will receive resolved values from `input` and is expected to return a `Promise<boolean>` or `boolean`.
 
+#### options
+
+Type: `object`
+
+##### concurrency
+
+Type: `number`\
+Default: `Infinity`\
+Minimum: `1`
+
+Number of concurrently pending promises returned by `tester`.
+
+##### preserveOrder
+
+Type: `boolean`\
+Default: `true`
+
+Preserve `input` order when searching.
+
+Disable this to improve performance if you don't care about the order.
 
 ## Related
 
-- [supports-color-cli](https://github.com/chalk/supports-color-cli) - CLI for this module
-- [chalk](https://github.com/chalk/chalk) - Terminal string styling done right
-
-
-## Maintainers
-
-- [Sindre Sorhus](https://github.com/sindresorhus)
-- [Josh Junon](https://github.com/qix-)
-
+- [p-map](https://github.com/sindresorhus/p-map) - Map over promises concurrently
+- [p-filter](https://github.com/sindresorhus/p-filter) - Filter promises concurrently
+- [p-any](https://github.com/sindresorhus/p-any) - Wait for any promise to be fulfilled
+- [More…](https://github.com/sindresorhus/promise-fun)
 
 ---
 
 <div align="center">
 	<b>
-		<a href="https://tidelift.com/subscription/pkg/npm-supports-color?utm_source=npm-supports-color&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
+		<a href="https://tidelift.com/subscription/pkg/npm-p-locate?utm_source=npm-p-locate&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
 	</b>
 	<br>
 	<sub>
 		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
 	</sub>
 </div>
-
----

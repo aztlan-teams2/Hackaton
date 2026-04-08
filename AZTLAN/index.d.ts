@@ -1,43 +1,20 @@
-// TypeScript Version: 3.2
-
-/// <reference types="node" lib="esnext" />
-
-import * as fs from 'fs';
-import { Readable } from 'stream';
-
-declare namespace readdir {
-  interface EntryInfo {
-    path: string;
-    fullPath: string;
-    basename: string;
-    stats?: fs.Stats;
-    dirent?: fs.Dirent;
-  }
-
-  interface ReaddirpOptions {
-    root?: string;
-    fileFilter?: string | string[] | ((entry: EntryInfo) => boolean);
-    directoryFilter?: string | string[] | ((entry: EntryInfo) => boolean);
-    type?: 'files' | 'directories' | 'files_directories' | 'all';
-    lstat?: boolean;
-    depth?: number;
-    alwaysStat?: boolean;
-  }
-
-  interface ReaddirpStream extends Readable, AsyncIterable<EntryInfo> {
-    read(): EntryInfo;
-    [Symbol.asyncIterator](): AsyncIterableIterator<EntryInfo>;
-  }
-
-  function promise(
-    root: string,
-    options?: ReaddirpOptions
-  ): Promise<EntryInfo[]>;
+type AnymatchFn = (testString: string) => boolean;
+type AnymatchPattern = string|RegExp|AnymatchFn;
+type AnymatchMatcher = AnymatchPattern|AnymatchPattern[]
+type AnymatchTester = {
+  (testString: string|any[], returnIndex: true): number;
+  (testString: string|any[]): boolean;
 }
 
-declare function readdir(
-  root: string,
-  options?: readdir.ReaddirpOptions
-): readdir.ReaddirpStream;
+type PicomatchOptions = {dot: boolean};
 
-export = readdir;
+declare const anymatch: {
+  (matchers: AnymatchMatcher): AnymatchTester;
+  (matchers: AnymatchMatcher, testString: null, returnIndex: true | PicomatchOptions): AnymatchTester;
+  (matchers: AnymatchMatcher, testString: string|any[], returnIndex: true | PicomatchOptions): number;
+  (matchers: AnymatchMatcher, testString: string|any[]): boolean;
+}
+
+export {AnymatchMatcher as Matcher}
+export {AnymatchTester as Tester}
+export default anymatch

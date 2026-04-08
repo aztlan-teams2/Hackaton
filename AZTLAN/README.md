@@ -1,380 +1,209 @@
-# d3-time
+# d3-time-format
 
-When visualizing time series data, analyzing temporal patterns, or working with time in general, the irregularities of conventional time units quickly become apparent. In the [Gregorian calendar](https://en.wikipedia.org/wiki/Gregorian_calendar), for example, most months have 31 days but some have 28, 29 or 30; most years have 365 days but [leap years](https://en.wikipedia.org/wiki/Leap_year) have 366; and with [daylight saving](https://en.wikipedia.org/wiki/Daylight_saving_time), most days have 24 hours but some have 23 or 25. Adding to complexity, daylight saving conventions vary around the world.
-
-As a result of these temporal peculiarities, it can be difficult to perform seemingly-trivial tasks. For example, if you want to compute the number of days that have passed between two dates, you can’t simply subtract and divide by 24 hours (86,400,000 ms):
+This module provides a JavaScript implementation of the venerable [strptime](http://pubs.opengroup.org/onlinepubs/009695399/functions/strptime.html) and [strftime](http://pubs.opengroup.org/onlinepubs/007908799/xsh/strftime.html) functions from the C standard library, and can be used to parse or format [dates](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) in a variety of locale-specific representations. To format a date, create a [formatter](#locale_format) from a specifier (a string with the desired format *directives*, indicated by `%`); then pass a date to the formatter, which returns a string. For example, to convert the current date to a human-readable string:
 
 ```js
-start = new Date(2015, 02, 01) // 2015-03-01T00:00
-end = new Date(2015, 03, 01) // 2015-04-01T00:00
-(end - start) / 864e5 // 30.958333333333332, oops! 🤯
+const formatTime = d3.timeFormat("%B %d, %Y");
+formatTime(new Date); // "June 30, 2015"
 ```
 
-You can, however, use [d3.timeDay](#timeDay).[count](#interval_count):
+Likewise, to convert a string back to a date, create a [parser](#locale_parse):
 
 ```js
-d3.timeDay.count(start, end) // 31 😌
+const parseTime = d3.timeParse("%B %d, %Y");
+parseTime("June 30, 2015"); // Tue Jun 30 2015 00:00:00 GMT-0700 (PDT)
 ```
 
-The [day](#day) [interval](#api-reference) is one of several provided by d3-time. Each interval represents a conventional unit of time—[hours](#timeHour), [weeks](#timeWeek), [months](#timeMonth), *etc.*—and has methods to calculate boundary dates. For example, [d3.timeDay](#timeDay) computes midnight (typically 12:00 AM local time) of the corresponding day. In addition to [rounding](#interval_round) and [counting](#interval_count), intervals can also be used to generate arrays of boundary dates. For example, to compute each Sunday in the current month:
+You can implement more elaborate conditional time formats, too. For example, here’s a [multi-scale time format](https://bl.ocks.org/mbostock/4149176) using [time intervals](https://github.com/d3/d3-time):
 
 ```js
-start = d3.timeMonth.floor() // 2015-01-01T00:00
-stop = d3.timeMonth.ceil() // 2015-02-01T00:00
-d3.timeWeek.range(start, stop) // [2015-01-07T00:00, 2015-01-14T00:00, 2015-01-21T00:00, 2015-01-28T00:00]
+const formatMillisecond = d3.timeFormat(".%L"),
+    formatSecond = d3.timeFormat(":%S"),
+    formatMinute = d3.timeFormat("%I:%M"),
+    formatHour = d3.timeFormat("%I %p"),
+    formatDay = d3.timeFormat("%a %d"),
+    formatWeek = d3.timeFormat("%b %d"),
+    formatMonth = d3.timeFormat("%B"),
+    formatYear = d3.timeFormat("%Y");
+
+function multiFormat(date) {
+  return (d3.timeSecond(date) < date ? formatMillisecond
+      : d3.timeMinute(date) < date ? formatSecond
+      : d3.timeHour(date) < date ? formatMinute
+      : d3.timeDay(date) < date ? formatHour
+      : d3.timeMonth(date) < date ? (d3.timeWeek(date) < date ? formatDay : formatWeek)
+      : d3.timeYear(date) < date ? formatMonth
+      : formatYear)(date);
+}
 ```
 
-The d3-time module does not implement its own calendaring system; it merely implements a convenient API for calendar math on top of ECMAScript [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date). Thus, it ignores leap seconds and can only work with the local time zone and [Coordinated Universal Time](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) (UTC).
-
-This module is used by D3’s time scales to generate sensible ticks, by D3’s time format, and can also be used directly to do things like [calendar layouts](http://bl.ocks.org/mbostock/4063318).
+This module is used by D3 [time scales](https://github.com/d3/d3-scale/blob/main/README.md#time-scales) to generate human-readable ticks.
 
 ## Installing
 
-If you use npm, `npm install d3-time`. You can also download the [latest release on GitHub](https://github.com/d3/d3-time/releases/latest). For vanilla HTML in modern browsers, import d3-time from Skypack:
+If you use npm, `npm install d3-time-format`. You can also download the [latest release on GitHub](https://github.com/d3/d3-time-format/releases/latest). For vanilla HTML in modern browsers, import d3-time-format from Skypack:
 
 ```html
 <script type="module">
 
-import {timeDay} from "https://cdn.skypack.dev/d3-time@3";
+import {timeFormat} from "https://cdn.skypack.dev/d3-time-format@4";
 
-const day = timeDay();
+const format = timeFormat("%x");
 
 </script>
 ```
 
-For legacy environments, you can load d3-time’s UMD bundle from an npm-based CDN such as jsDelivr; a `d3` global is exported:
+For legacy environments, you can load d3-time-format’s UMD bundle from an npm-based CDN such as jsDelivr; a `d3` global is exported:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/d3-array@3"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3-time@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-time-format@4"></script>
 <script>
 
-const day = d3.timeDay();
+const format = d3.timeFormat("%x");
 
 </script>
-```
 
-[Try d3-time in your browser.](https://observablehq.com/collection/@d3/d3-time)
+Locale files are published to npm and can be loaded using [d3.json](https://github.com/d3/d3-fetch/blob/main/README.md#json). For example, to set Russian as the default locale:
+
+```js
+d3.json("https://cdn.jsdelivr.net/npm/d3-time-format@3/locale/ru-RU.json").then(locale => {
+  d3.timeFormatDefaultLocale(locale);
+
+  const format = d3.timeFormat("%c");
+
+  console.log(format(new Date)); // понедельник,  5 декабря 2016 г. 10:31:59
+});
+```
 
 ## API Reference
 
-<a name="_interval" href="#_interval">#</a> <i>interval</i>([<i>date</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
+<a name="timeFormat" href="#timeFormat">#</a> d3.<b>timeFormat</b>(<i>specifier</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/defaultLocale.js)
 
-Equivalent to [*interval*.floor](#interval_floor), except if *date* is not specified, it defaults to the current time. For example, [d3.timeYear](#timeYear)(*date*) and d3.timeYear.floor(*date*) are equivalent.
+An alias for [*locale*.format](#locale_format) on the [default locale](#timeFormatDefaultLocale).
 
-```js
-monday = d3.timeMonday() // the latest preceeding Monday, local time
-```
+<a name="timeParse" href="#timeParse">#</a> d3.<b>timeParse</b>(<i>specifier</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/defaultLocale.js)
 
-<a name="interval_floor" href="#interval_floor">#</a> <i>interval</i>.<b>floor</b>(<i>date</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
+An alias for [*locale*.parse](#locale_parse) on the [default locale](#timeFormatDefaultLocale).
 
-Returns a new date representing the latest interval boundary date before or equal to *date*. For example, [d3.timeDay](#timeDay).floor(*date*) typically returns 12:00 AM local time on the given *date*.
+<a name="utcFormat" href="#utcFormat">#</a> d3.<b>utcFormat</b>(<i>specifier</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/defaultLocale.js)
 
-This method is idempotent: if the specified *date* is already floored to the current interval, a new date with an identical time is returned. Furthermore, the returned date is the minimum expressible value of the associated interval, such that *interval*.floor(*interval*.floor(*date*) - 1) returns the preceeding interval boundary date.
+An alias for [*locale*.utcFormat](#locale_utcFormat) on the [default locale](#timeFormatDefaultLocale).
 
-Note that the `==` and `===` operators do not compare by value with [Date](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date) objects, and thus you cannot use them to tell whether the specified *date* has already been floored. Instead, coerce to a number and then compare:
+<a name="utcParse" href="#utcParse">#</a> d3.<b>utcParse</b>(<i>specifier</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/defaultLocale.js)
 
-```js
-// Returns true if the specified date is a day boundary.
-function isDay(date) {
-  return +d3.timeDay.floor(date) === +date;
-}
-```
+An alias for [*locale*.utcParse](#locale_utcParse) on the [default locale](#timeFormatDefaultLocale).
 
-This is more reliable than testing whether the time is 12:00 AM, as in some time zones midnight may not exist due to daylight saving.
+<a name="isoFormat" href="#isoFormat">#</a> d3.<b>isoFormat</b> · [Source](https://github.com/d3/d3-time-format/blob/main/src/isoFormat.js)
 
-<a name="interval_round" href="#interval_round">#</a> <i>interval</i>.<b>round</b>(<i>date</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
+The full [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC time formatter. Where available, this method will use [Date.toISOString](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Date/toISOString) to format.
 
-Returns a new date representing the closest interval boundary date to *date*. For example, [d3.timeDay](#timeDay).round(*date*) typically returns 12:00 AM local time on the given *date* if it is on or before noon, and 12:00 AM of the following day if it is after noon.
+<a name="isoParse" href="#isoParse">#</a> d3.<b>isoParse</b> · [Source](https://github.com/d3/d3-time-format/blob/main/src/isoParse.js)
 
-This method is idempotent: if the specified *date* is already rounded to the current interval, a new date with an identical time is returned.
-
-<a name="interval_ceil" href="#interval_ceil">#</a> <i>interval</i>.<b>ceil</b>(<i>date</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
-
-Returns a new date representing the earliest interval boundary date after or equal to *date*. For example, [d3.timeDay](#timeDay).ceil(*date*) typically returns 12:00 AM local time on the date following the given *date*.
-
-This method is idempotent: if the specified *date* is already ceilinged to the current interval, a new date with an identical time is returned. Furthermore, the returned date is the maximum expressible value of the associated interval, such that *interval*.ceil(*interval*.ceil(*date*) + 1) returns the following interval boundary date.
-
-<a name="interval_offset" href="#interval_offset">#</a> <i>interval</i>.<b>offset</b>(<i>date</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
-
-Returns a new date equal to *date* plus *step* intervals. If *step* is not specified it defaults to 1. If *step* is negative, then the returned date will be before the specified *date*; if *step* is zero, then a copy of the specified *date* is returned; if *step* is not an integer, it is [floored](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor). This method does not round the specified *date* to the interval. For example, if *date* is today at 5:34 PM, then [d3.timeDay](#timeDay).offset(*date*, 1) returns 5:34 PM tomorrow (even if daylight saving changes!).
-
-<a name="interval_range" href="#interval_range">#</a> <i>interval</i>.<b>range</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
-
-Returns an array of dates representing every interval boundary after or equal to *start* (inclusive) and before *stop* (exclusive). If *step* is specified, then every *step*th boundary will be returned; for example, for the [d3.timeDay](#timeDay) interval a *step* of 2 will return every other day. If *step* is not an integer, it is [floored](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/floor).
-
-The first date in the returned array is the earliest boundary after or equal to *start*; subsequent dates are [offset](#interval_offset) by *step* intervals and [floored](#interval_floor). Thus, two overlapping ranges may be consistent. For example, this range contains odd days:
+The full [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) UTC time parser. Where available, this method will use the [Date constructor](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/Date) to parse strings. If you depend on strict validation of the input format according to ISO 8601, you should construct a [UTC parser function](#utcParse):
 
 ```js
-d3.timeDay.range(new Date(2015, 0, 1), new Date(2015, 0, 7), 2) // [2015-01-01T00:00, 2015-01-03T00:00, 2015-01-05T00:00]
+const strictIsoParse = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
 ```
 
-While this contains even days:
+<a name="locale_format" href="#locale_format">#</a> <i>locale</i>.<b>format</b>(<i>specifier</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/locale.js)
+
+Returns a new formatter for the given string *specifier*. The specifier string may contain the following directives:
+
+* `%a` - abbreviated weekday name.*
+* `%A` - full weekday name.*
+* `%b` - abbreviated month name.*
+* `%B` - full month name.*
+* `%c` - the locale’s date and time, such as `%x, %X`.*
+* `%d` - zero-padded day of the month as a decimal number [01,31].
+* `%e` - space-padded day of the month as a decimal number [ 1,31]; equivalent to `%_d`.
+* `%f` - microseconds as a decimal number [000000, 999999].
+* `%g` - ISO 8601 week-based year without century as a decimal number [00,99].
+* `%G` - ISO 8601 week-based year with century as a decimal number.
+* `%H` - hour (24-hour clock) as a decimal number [00,23].
+* `%I` - hour (12-hour clock) as a decimal number [01,12].
+* `%j` - day of the year as a decimal number [001,366].
+* `%m` - month as a decimal number [01,12].
+* `%M` - minute as a decimal number [00,59].
+* `%L` - milliseconds as a decimal number [000, 999].
+* `%p` - either AM or PM.*
+* `%q` - quarter of the year as a decimal number [1,4].
+* `%Q` - milliseconds since UNIX epoch.
+* `%s` - seconds since UNIX epoch.
+* `%S` - second as a decimal number [00,61].
+* `%u` - Monday-based (ISO 8601) weekday as a decimal number [1,7].
+* `%U` - Sunday-based week of the year as a decimal number [00,53].
+* `%V` - ISO 8601 week of the year as a decimal number [01, 53].
+* `%w` - Sunday-based weekday as a decimal number [0,6].
+* `%W` - Monday-based week of the year as a decimal number [00,53].
+* `%x` - the locale’s date, such as `%-m/%-d/%Y`.*
+* `%X` - the locale’s time, such as `%-I:%M:%S %p`.*
+* `%y` - year without century as a decimal number [00,99].
+* `%Y` - year with century as a decimal number, such as `1999`.
+* `%Z` - time zone offset, such as `-0700`, `-07:00`, `-07`, or `Z`.
+* `%%` - a literal percent sign (`%`).
+
+Directives marked with an asterisk (\*) may be affected by the [locale definition](#locales).
+
+For `%U`, all days in a new year preceding the first Sunday are considered to be in week 0. For `%W`, all days in a new year preceding the first Monday are considered to be in week 0. Week numbers are computed using [*interval*.count](https://github.com/d3/d3-time/blob/main/README.md#interval_count). For example, 2015-52 and 2016-00 represent Monday, December 28, 2015, while 2015-53 and 2016-01 represent Monday, January 4, 2016. This differs from the [ISO week date](https://en.wikipedia.org/wiki/ISO_week_date) specification (`%V`), which uses a more complicated definition!
+
+For `%V`,`%g` and `%G`, per the [strftime man page](http://man7.org/linux/man-pages/man3/strftime.3.html):
+
+> In this system, weeks start on a Monday, and are numbered from 01, for the first week, up to 52 or 53, for the last week.  Week 1 is the first week where four or more days fall within the new year (or, synonymously, week 01 is: the first week of the year that contains a Thursday; or, the week that has 4 January in it). If the ISO week number belongs to the previous or next year, that year is used instead.
+
+The `%` sign indicating a directive may be immediately followed by a padding modifier:
+
+* `0` - zero-padding
+* `_` - space-padding
+* `-` - disable padding
+
+If no padding modifier is specified, the default is `0` for all directives except `%e`, which defaults to `_`. (In some implementations of strftime and strptime, a directive may include an optional field width or precision; this feature is not yet implemented.)
+
+The returned function formats a specified *[date](https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date)*, returning the corresponding string.
 
 ```js
-d3.timeDay.range(new Date(2015, 0, 2), new Date(2015, 0, 8), 2) // [2015-01-02T00:00, 2015-01-04T00:00, 2015-01-06T00:00]
+const formatMonth = d3.timeFormat("%B"),
+    formatDay = d3.timeFormat("%A"),
+    date = new Date(2014, 4, 1); // Thu May 01 2014 00:00:00 GMT-0700 (PDT)
+
+formatMonth(date); // "May"
+formatDay(date); // "Thursday"
 ```
 
-To make ranges consistent when a *step* is specified, use [*interval*.every](#interval_every) instead.
+<a name="locale_parse" href="#locale_parse">#</a> <i>locale</i>.<b>parse</b>(<i>specifier</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/locale.js)
 
-<a name="interval_filter" href="#interval_filter">#</a> <i>interval</i>.<b>filter</b>(<i>test</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
+Returns a new parser for the given string *specifier*. The specifier string may contain the same directives as [*locale*.format](#locale_format). The `%d` and `%e` directives are considered equivalent for parsing.
 
-Returns a new interval that is a filtered subset of this interval using the specified *test* function. The *test* function is passed a date and should return true if and only if the specified date should be considered part of the interval. For example, to create an interval that returns the 1st, 11th, 21th and 31th (if it exists) of each month:
+The returned function parses a specified *string*, returning the corresponding [date](https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date) or null if the string could not be parsed according to this format’s specifier. Parsing is strict: if the specified <i>string</i> does not exactly match the associated specifier, this method returns null. For example, if the associated specifier is `%Y-%m-%dT%H:%M:%SZ`, then the string `"2011-07-01T19:15:28Z"` will be parsed as expected, but `"2011-07-01T19:15:28"`, `"2011-07-01 19:15:28"` and `"2011-07-01"` will return null. (Note that the literal `Z` here is different from the time zone offset directive `%Z`.) If a more flexible parser is desired, try multiple formats sequentially until one returns non-null.
 
-```js
-d3.timeDay.filter(d => (d.getDate() - 1) % 10 === 0)
-```
+<a name="locale_utcFormat" href="#locale_utcFormat">#</a> <i>locale</i>.<b>utcFormat</b>(<i>specifier</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/locale.js)
 
-The returned filtered interval does not support [*interval*.count](#interval_count). See also [*interval*.every](#interval_every).
+Equivalent to [*locale*.format](#locale_format), except all directives are interpreted as [Coordinated Universal Time (UTC)](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) rather than local time.
 
-<a name="interval_every" href="#interval_every">#</a> <i>interval</i>.<b>every</b>(<i>step</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
+<a name="locale_utcParse" href="#locale_utcParse">#</a> <i>locale</i>.<b>utcParse</b>(<i>specifier</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/locale.js)
 
-Returns a [filtered](#interval_filter) view of this interval representing every *step*th date. The meaning of *step* is dependent on this interval’s parent interval as defined by the field function. For example, [d3.timeMinute](#timeMinute).every(15) returns an interval representing every fifteen minutes, starting on the hour: :00, :15, :30, :45, <i>etc.</i> Note that for some intervals, the resulting dates may not be uniformly-spaced; [d3.timeDay](#timeDay)’s parent interval is [d3.timeMonth](#timeMonth), and thus the interval number resets at the start of each month. If *step* is not valid, returns null. If *step* is one, returns this interval.
+Equivalent to [*locale*.parse](#locale_parse), except all directives are interpreted as [Coordinated Universal Time (UTC)](https://en.wikipedia.org/wiki/Coordinated_Universal_Time) rather than local time.
 
-This method can be used in conjunction with [*interval*.range](#interval_range) to ensure that two overlapping ranges are consistent. For example, this range contains odd days:
+### Locales
 
-```js
-d3.timeDay.every(2).range(new Date(2015, 0, 1), new Date(2015, 0, 7)) // [2015-01-01T00:00, 2015-01-03T00:00, 2015-01-05T00:00]
-```
+<a name="timeFormatLocale" href="#timeFormatLocale">#</a> d3.<b>timeFormatLocale</b>(<i>definition</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/locale.js)
 
-As does this one:
+Returns a *locale* object for the specified *definition* with [*locale*.format](#locale_format), [*locale*.parse](#locale_parse), [*locale*.utcFormat](#locale_utcFormat), [*locale*.utcParse](#locale_utcParse) methods. The *definition* must include the following properties:
 
-```js
-d3.timeDay.every(2).range(new Date(2015, 0, 2), new Date(2015, 0, 8)) // [2015-01-03T00:00, 2015-01-05T00:00, 2015-01-07T00:00]
-```
+* `dateTime` - the date and time (`%c`) format specifier (<i>e.g.</i>, `"%a %b %e %X %Y"`).
+* `date` - the date (`%x`) format specifier (<i>e.g.</i>, `"%m/%d/%Y"`).
+* `time` - the time (`%X`) format specifier (<i>e.g.</i>, `"%H:%M:%S"`).
+* `periods` - the A.M. and P.M. equivalents (<i>e.g.</i>, `["AM", "PM"]`).
+* `days` - the full names of the weekdays, starting with Sunday.
+* `shortDays` - the abbreviated names of the weekdays, starting with Sunday.
+* `months` - the full names of the months (starting with January).
+* `shortMonths` - the abbreviated names of the months (starting with January).
 
-The returned filtered interval does not support [*interval*.count](#interval_count). See also [*interval*.filter](#interval_filter).
+For an example, see [Localized Time Axis II](https://bl.ocks.org/mbostock/805115ebaa574e771db1875a6d828949).
 
-<a name="interval_count" href="#interval_count">#</a> <i>interval</i>.<b>count</b>(<i>start</i>, <i>end</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
+<a name="timeFormatDefaultLocale" href="#timeFormatDefaultLocale">#</a> d3.<b>timeFormatDefaultLocale</b>(<i>definition</i>) · [Source](https://github.com/d3/d3-time-format/blob/main/src/defaultLocale.js)
 
-Returns the number of interval boundaries after *start* (exclusive) and before or equal to *end* (inclusive). Note that this behavior is slightly different than [*interval*.range](#interval_range) because its purpose is to return the zero-based number of the specified *end* date relative to the specified *start* date. For example, to compute the current zero-based day-of-year number:
+Equivalent to [d3.timeFormatLocale](#timeFormatLocale), except it also redefines [d3.timeFormat](#timeFormat), [d3.timeParse](#timeParse), [d3.utcFormat](#utcFormat) and [d3.utcParse](#utcParse) to the new locale’s [*locale*.format](#locale_format), [*locale*.parse](#locale_parse), [*locale*.utcFormat](#locale_utcFormat) and [*locale*.utcParse](#locale_utcParse). If you do not set a default locale, it defaults to [U.S. English](https://github.com/d3/d3-time-format/blob/main/locale/en-US.json).
 
-```js
-d3.timeDay.count(d3.timeYear(now), now) // 177
-```
-
-Likewise, to compute the current zero-based week-of-year number for weeks that start on Sunday:
-
-```js
-d3.timeSunday.count(d3.timeYear(now), now) // 25
-```
-
-<a name="timeInterval" href="#timeInterval">#</a> d3.<b>timeInterval</b>(<i>floor</i>, <i>offset</i>[, <i>count</i>[, <i>field</i>]]) · [Source](https://github.com/d3/d3-time/blob/main/src/interval.js)
-
-Constructs a new custom interval given the specified *floor* and *offset* functions and an optional *count* function.
-
-The *floor* function takes a single date as an argument and rounds it down to the nearest interval boundary.
-
-The *offset* function takes a date and an integer step as arguments and advances the specified date by the specified number of boundaries; the step may be positive, negative or zero.
-
-The optional *count* function takes a start date and an end date, already floored to the current interval, and returns the number of boundaries between the start (exclusive) and end (inclusive). If a *count* function is not specified, the returned interval does not expose [*interval*.count](#interval_count) or [*interval*.every](#interval_every) methods. Note: due to an internal optimization, the specified *count* function must not invoke *interval*.count on other time intervals.
-
-The optional *field* function takes a date, already floored to the current interval, and returns the field value of the specified date, corresponding to the number of boundaries between this date (exclusive) and the latest previous parent boundary. For example, for the [d3.timeDay](#timeDay) interval, this returns the number of days since the start of the month. If a *field* function is not specified, it defaults to counting the number of interval boundaries since the UNIX epoch of January 1, 1970 UTC. The *field* function defines the behavior of [*interval*.every](#interval_every).
-
-### Intervals
-
-The following intervals are provided:
-
-<a name="timeMillisecond" href="#timeMillisecond">#</a> d3.<b>timeMillisecond</b> · [Source](https://github.com/d3/d3-time/blob/main/src/millisecond.js "Source")
-<br><a href="#timeMillisecond">#</a> d3.<b>utcMillisecond</b>
-
-Milliseconds; the shortest available time unit.
-
-<a name="timeSecond" href="#timeSecond">#</a> d3.<b>timeSecond</b> · [Source](https://github.com/d3/d3-time/blob/main/src/second.js "Source")
-<br><a href="#timeSecond">#</a> d3.<b>utcSecond</b>
-
-Seconds (e.g., 01:23:45.0000 AM); 1,000 milliseconds.
-
-<a name="timeMinute" href="#timeMinute">#</a> d3.<b>timeMinute</b> · [Source](https://github.com/d3/d3-time/blob/main/src/minute.js "Source")
-<br><a href="#timeMinute">#</a> d3.<b>utcMinute</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcMinute.js "Source")
-
-Minutes (e.g., 01:02:00 AM); 60 seconds. Note that ECMAScript [ignores leap seconds](http://www.ecma-international.org/ecma-262/5.1/#sec-15.9.1.1).
-
-<a name="timeHour" href="#timeHour">#</a> d3.<b>timeHour</b> · [Source](https://github.com/d3/d3-time/blob/main/src/hour.js "Source")
-<br><a href="#timeHour">#</a> d3.<b>utcHour</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcHour.js "Source")
-
-Hours (e.g., 01:00 AM); 60 minutes. Note that advancing time by one hour in local time can return the same hour or skip an hour due to daylight saving.
-
-<a name="timeDay" href="#timeDay">#</a> d3.<b>timeDay</b> · [Source](https://github.com/d3/d3-time/blob/main/src/day.js "Source")
-<br><a href="#timeDay">#</a> d3.<b>utcDay</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcDay.js "Source")
-<br><a href="#timeDay">#</a> d3.<b>unixDay</b> · [Source](https://github.com/d3/d3-time/blob/main/src/unixDay.js "Source")
-
-Days (e.g., February 7, 2012 at 12:00 AM); typically 24 hours. Days in local time may range from 23 to 25 hours due to daylight saving. d3.unixDay is like [d3.utcDay](#timeDay), except it counts days since the UNIX epoch (January 1, 1970) such that *interval*.every returns uniformly-spaced dates rather than varying based on day-of-month.
-
-<a name="timeWeek" href="#timeWeek">#</a> d3.<b>timeWeek</b> · [Source](https://github.com/d3/d3-time/blob/main/src/week.js "Source")
-<br><a href="#timeWeek">#</a> d3.<b>utcWeek</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js "Source")
-
-Alias for [d3.timeSunday](#timeSunday); 7 days and typically 168 hours. Weeks in local time may range from 167 to 169 hours due to daylight saving.
-
-<a name="timeSunday" href="#timeSunday">#</a> d3.<b>timeSunday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeSunday">#</a> d3.<b>utcSunday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Sunday-based weeks (e.g., February 5, 2012 at 12:00 AM).
-
-<a name="timeMonday" href="#timeMonday">#</a> d3.<b>timeMonday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeMonday">#</a> d3.<b>utcMonday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Monday-based weeks (e.g., February 6, 2012 at 12:00 AM).
-
-<a name="timeTuesday" href="#timeTuesday">#</a> d3.<b>timeTuesday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeTuesday">#</a> d3.<b>utcTuesday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Tuesday-based weeks (e.g., February 7, 2012 at 12:00 AM).
-
-<a name="timeWednesday" href="#timeWednesday">#</a> d3.<b>timeWednesday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeWednesday">#</a> d3.<b>utcWednesday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Wednesday-based weeks (e.g., February 8, 2012 at 12:00 AM).
-
-<a name="timeThursday" href="#timeThursday">#</a> d3.<b>timeThursday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeThursday">#</a> d3.<b>utcThursday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Thursday-based weeks (e.g., February 9, 2012 at 12:00 AM).
-
-<a name="timeFriday" href="#timeFriday">#</a> d3.<b>timeFriday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeFriday">#</a> d3.<b>utcFriday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Friday-based weeks (e.g., February 10, 2012 at 12:00 AM).
-
-<a name="timeSaturday" href="#timeSaturday">#</a> d3.<b>timeSaturday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeSaturday">#</a> d3.<b>utcSaturday</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Saturday-based weeks (e.g., February 11, 2012 at 12:00 AM).
-
-<a name="timeMonth" href="#timeMonth">#</a> d3.<b>timeMonth</b> · [Source](https://github.com/d3/d3-time/blob/main/src/month.js "Source")
-<br><a href="#timeMonth">#</a> d3.<b>utcMonth</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcMonth.js "Source")
-
-Months (e.g., February 1, 2012 at 12:00 AM); ranges from 28 to 31 days.
-
-<a name="timeYear" href="#timeYear">#</a> d3.<b>timeYear</b> · [Source](https://github.com/d3/d3-time/blob/main/src/year.js "Source")
-<br><a href="#timeYear">#</a> d3.<b>utcYear</b> · [Source](https://github.com/d3/d3-time/blob/main/src/utcYear.js "Source")
-
-Years (e.g., January 1, 2012 at 12:00 AM); ranges from 365 to 366 days.
-
-### Ranges
-
-For convenience, aliases for [*interval*.range](#interval_range) are also provided as plural forms of the corresponding interval.
-
-<a name="timeMilliseconds" href="#timeMilliseconds">#</a> d3.<b>timeMilliseconds</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/millisecond.js)
-<br><a href="#timeMilliseconds">#</a> d3.<b>utcMilliseconds</b>(<i>start</i>, <i>stop</i>[, <i>step</i>])
-
-Aliases for [d3.timeMillisecond](#timeMillisecond).[range](#interval_range) and [d3.utcMillisecond](#timeMillisecond).[range](#interval_range).
-
-<a name="timeSeconds" href="#timeSeconds">#</a> d3.<b>timeSeconds</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/second.js)
-<br><a href="#timeSeconds">#</a> d3.<b>utcSeconds</b>(<i>start</i>, <i>stop</i>[, <i>step</i>])
-
-Aliases for [d3.timeSecond](#timeSecond).[range](#interval_range) and [d3.utcSecond](#timeSecond).[range](#interval_range).
-
-<a name="timeMinutes" href="#timeMinutes">#</a> d3.<b>timeMinutes</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/minute.js)
-<br><a href="#timeMinutes">#</a> d3.<b>utcMinutes</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcMinute.js)
-
-Aliases for [d3.timeMinute](#timeMinute).[range](#interval_range) and [d3.utcMinute](#timeMinute).[range](#interval_range).
-
-<a name="timeHours" href="#timeHours">#</a> d3.<b>timeHours</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/hour.js)
-<br><a href="#timeHours">#</a> d3.<b>utcHours</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcHour.js)
-
-Aliases for [d3.timeHour](#timeHour).[range](#interval_range) and [d3.utcHour](#timeHour).[range](#interval_range).
-
-<a name="timeDays" href="#timeDays">#</a> d3.<b>timeDays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/day.js)
-<br><a href="#timeDays">#</a> d3.<b>utcDays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcDay.js)
-<br><a href="#timeDays">#</a> d3.<b>unixDays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/unixDay.js)
-
-Aliases for [d3.timeDay](#timeDay).[range](#interval_range), [d3.utcDay](#timeDay).[range](#interval_range), and [d3.unixDay](#timeDay).[range](#interval_range).
-
-<a name="timeWeeks" href="#timeWeeks">#</a> d3.<b>timeWeeks</b>(<i>start</i>, <i>stop</i>[, <i>step</i>])
-<br><a href="#timeWeeks">#</a> d3.<b>utcWeeks</b>(<i>start</i>, <i>stop</i>[, <i>step</i>])
-
-Aliases for [d3.timeWeek](#timeWeek).[range](#interval_range) and [d3.utcWeek](#timeWeek).[range](#interval_range).
-
-<a name="timeSundays" href="#timeSundays">#</a> d3.<b>timeSundays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeSundays">#</a> d3.<b>utcSundays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Aliases for [d3.timeSunday](#timeSunday).[range](#interval_range) and [d3.utcSunday](#timeSunday).[range](#interval_range).
-
-<a name="timeMondays" href="#timeMondays">#</a> d3.<b>timeMondays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeMondays">#</a> d3.<b>utcMondays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Aliases for [d3.timeMonday](#timeMonday).[range](#interval_range) and [d3.utcMonday](#timeMonday).[range](#interval_range).
-
-<a name="timeTuesdays" href="#timeTuesdays">#</a> d3.<b>timeTuesdays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeTuesdays">#</a> d3.<b>utcTuesdays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Aliases for [d3.timeTuesday](#timeTuesday).[range](#interval_range) and [d3.utcTuesday](#timeTuesday).[range](#interval_range).
-
-<a name="timeWednesdays" href="#timeWednesdays">#</a> d3.<b>timeWednesdays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeWednesdays">#</a> d3.<b>utcWednesdays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Aliases for [d3.timeWednesday](#timeWednesday).[range](#interval_range) and [d3.utcWednesday](#timeWednesday).[range](#interval_range).
-
-<a name="timeThursdays" href="#timeThursdays">#</a> d3.<b>timeThursdays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeThursdays">#</a> d3.<b>utcThursdays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Aliases for [d3.timeThursday](#timeThursday).[range](#interval_range) and [d3.utcThursday](#timeThursday).[range](#interval_range).
-
-<a name="timeFridays" href="#timeFridays">#</a> d3.<b>timeFridays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeFridays">#</a> d3.<b>utcFridays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Aliases for [d3.timeFriday](#timeFriday).[range](#interval_range) and [d3.utcFriday](#timeFriday).[range](#interval_range).
-
-<a name="timeSaturdays" href="#timeSaturdays">#</a> d3.<b>timeSaturdays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/week.js)
-<br><a href="#timeSaturdays">#</a> d3.<b>utcSaturdays</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcWeek.js)
-
-Aliases for [d3.timeSaturday](#timeSaturday).[range](#interval_range) and [d3.utcSaturday](#timeSaturday).[range](#interval_range).
-
-<a name="timeMonths" href="#timeMonths">#</a> d3.<b>timeMonths</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/month.js)
-<br><a href="#timeMonths">#</a> d3.<b>utcMonths</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcMonth.js)
-
-Aliases for [d3.timeMonth](#timeMonth).[range](#interval_range) and [d3.utcMonth](#timeMonth).[range](#interval_range).
-
-<a name="timeYears" href="#timeYears">#</a> d3.<b>timeYears</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/year.js)
-<br><a href="#timeYears">#</a> d3.<b>utcYears</b>(<i>start</i>, <i>stop</i>[, <i>step</i>]) · [Source](https://github.com/d3/d3-time/blob/main/src/utcYear.js)
-
-Aliases for [d3.timeYear](#timeYear).[range](#interval_range) and [d3.utcYear](#timeYear).[range](#interval_range).
-
-### Ticks
-
-<a name="timeTicks" href="#timeTicks">#</a> d3.<b>timeTicks</b>(<i>start</i>, <i>stop</i>, <i>count</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/ticks.js)
-
-Equivalent to [d3.utcTicks](#utcTicks), but in local time.
-
-<a name="timeTickInterval" href="#timeTickInterval">#</a> d3.<b>timeTickInterval</b>(<i>start</i>, <i>stop</i>, <i>count</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/ticks.js)
-
-Returns the time interval that would be used by [d3.timeTicks](#timeTicks) given the same arguments.
-
-<a name="utcTicks" href="#utcTicks">#</a> d3.<b>utcTicks</b>(<i>start</i>, <i>stop</i>, <i>count</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/ticks.js)
-
-Returns an array of approximately *count* dates at regular intervals between *start* and *stop* (inclusive). If *stop* is before *start*, dates are returned in reverse chronological order; otherwise dates are returned in chronological order. The following UTC time intervals are considered:
-
-* 1 second
-* 5 seconds
-* 15 seconds
-* 30 seconds
-* 1 minute
-* 5 minutes
-* 15 minutes
-* 30 minutes
-* 1 hour
-* 3 hours
-* 6 hours
-* 12 hours
-* 1 day
-* 2 days
-* 1 week
-* 1 month
-* 3 months
-* 1 year
-
-Multiples of milliseconds (for small ranges) and years (for large ranges) are also considered, following the rules of [d3.ticks](https://github.com/d3/d3-array/blob/main/README.md#ticks). The interval producing the number of dates that is closest to *count* is used. For example:
-
-```js
-start = new Date(Date.UTC(1970, 2, 1))
-stop = new Date(Date.UTC(1996, 2, 19))
-count = 4
-d3.utcTicks(start, stop, count) // [1975-01-01, 1980-01-01, 1985-01-01, 1990-01-01, 1995-01-01]
-```
-
-If *count* is a time interval, this function behaves similarly to [*interval*.range](#interval_range) except that both *start* and *stop* are inclusive and it may return dates in reverse chronological order if *stop* is before *start*.
-
-<a name="utcTickInterval" href="#utcTickInterval">#</a> d3.<b>utcTickInterval</b>(<i>start</i>, <i>stop</i>, <i>count</i>) · [Source](https://github.com/d3/d3-time/blob/main/src/ticks.js)
-
-Returns the time interval that would be used by [d3.utcTicks](#utcTicks) given the same arguments. If there is no associated interval, such as when *start* or *stop* is invalid, returns null.
+For an example, see [Localized Time Axis](https://bl.ocks.org/mbostock/6f1cc065d4d172bcaf322e399aa8d62f).
