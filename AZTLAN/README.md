@@ -1,16 +1,15 @@
-# React + Vite
+# Installation
+> `npm install --save @types/json-schema`
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Summary
+This package contains type definitions for json-schema (https://github.com/kriszyp/json-schema).
 
-Currently, two official plugins are available:
+# Details
+Files were exported from https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/json-schema.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Additional Details
+ * Last updated: Tue, 07 Nov 2023 03:09:37 GMT
+ * Dependencies: none
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+# Credits
+These definitions were written by [Boris Cherny](https://github.com/bcherny), [Lucian Buzzo](https://github.com/lucianbuzzo), [Roland Groza](https://github.com/rolandjitsu), and [Jason Kwok](https://github.com/JasonHK).
