@@ -1,139 +1,48 @@
-# quick-lru [![Build Status](https://travis-ci.org/sindresorhus/quick-lru.svg?branch=master)](https://travis-ci.org/sindresorhus/quick-lru) [![Coverage Status](https://coveralls.io/repos/github/sindresorhus/quick-lru/badge.svg?branch=master)](https://coveralls.io/github/sindresorhus/quick-lru?branch=master)
+# callsites [![Build Status](https://travis-ci.org/sindresorhus/callsites.svg?branch=master)](https://travis-ci.org/sindresorhus/callsites)
 
-> Simple [“Least Recently Used” (LRU) cache](https://en.m.wikipedia.org/wiki/Cache_replacement_policies#Least_Recently_Used_.28LRU.29)
+> Get callsites from the [V8 stack trace API](https://v8.dev/docs/stack-trace-api)
 
-Useful when you need to cache something and limit memory usage.
-
-Inspired by the [`hashlru` algorithm](https://github.com/dominictarr/hashlru#algorithm), but instead uses [`Map`](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Map) to support keys of any type, not just strings, and values can be `undefined`.
 
 ## Install
 
 ```
-$ npm install quick-lru
+$ npm install callsites
 ```
+
 
 ## Usage
 
 ```js
-const QuickLRU = require('quick-lru');
+const callsites = require('callsites');
 
-const lru = new QuickLRU({maxSize: 1000});
+function unicorn() {
+	console.log(callsites()[0].getFileName());
+	//=> '/Users/sindresorhus/dev/callsites/test.js'
+}
 
-lru.set('🦄', '🌈');
-
-lru.has('🦄');
-//=> true
-
-lru.get('🦄');
-//=> '🌈'
+unicorn();
 ```
+
 
 ## API
 
-### new QuickLRU(options?)
+Returns an array of callsite objects with the following methods:
 
-Returns a new instance.
+- `getThis`: returns the value of `this`.
+- `getTypeName`: returns the type of `this` as a string. This is the name of the function stored in the constructor field of `this`, if available, otherwise the object's `[[Class]]` internal property.
+- `getFunction`: returns the current function.
+- `getFunctionName`: returns the name of the current function, typically its `name` property. If a name property is not available an attempt will be made to try to infer a name from the function's context.
+- `getMethodName`: returns the name of the property of `this` or one of its prototypes that holds the current function.
+- `getFileName`: if this function was defined in a script returns the name of the script.
+- `getLineNumber`: if this function was defined in a script returns the current line number.
+- `getColumnNumber`: if this function was defined in a script returns the current column number
+- `getEvalOrigin`: if this function was created using a call to `eval` returns a string representing the location where `eval` was called.
+- `isToplevel`: is this a top-level invocation, that is, is this the global object?
+- `isEval`: does this call take place in code defined by a call to `eval`?
+- `isNative`: is this call in native V8 code?
+- `isConstructor`: is this a constructor call?
 
-### options
 
-Type: `object`
+## License
 
-#### maxSize
-
-*Required*\
-Type: `number`
-
-The maximum number of items before evicting the least recently used items.
-
-#### maxAge
-
-Type: `number`\
-Default: `Infinity`
-
-The maximum number of milliseconds an item should remain in cache.
-By default maxAge will be Infinity, which means that items will never expire.
-
-Lazy expiration happens upon the next `write` or `read` call.
-
-Individual expiration of an item can be specified by the `set(key, value, options)` method.
-
-#### onEviction
-
-*Optional*\
-Type: `(key, value) => void`
-
-Called right before an item is evicted from the cache.
-
-Useful for side effects or for items like object URLs that need explicit cleanup (`revokeObjectURL`).
-
-### Instance
-
-The instance is [`iterable`](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Iteration_protocols) so you can use it directly in a [`for…of`](https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Statements/for...of) loop.
-
-Both `key` and `value` can be of any type.
-
-#### .set(key, value, options?)
-
-Set an item. Returns the instance.
-
-Individual expiration of an item can be specified with the `maxAge` option. If not specified, the global `maxAge` value will be used in case it is specified on the constructor, otherwise the item will never expire.
-
-#### .get(key)
-
-Get an item.
-
-#### .has(key)
-
-Check if an item exists.
-
-#### .peek(key)
-
-Get an item without marking it as recently used.
-
-#### .delete(key)
-
-Delete an item.
-
-Returns `true` if the item is removed or `false` if the item doesn't exist.
-
-#### .clear()
-
-Delete all items.
-
-#### .resize(maxSize)
-
-Update the `maxSize`, discarding items as necessary. Insertion order is mostly preserved, though this is not a strong guarantee.
-
-Useful for on-the-fly tuning of cache sizes in live systems.
-
-#### .keys()
-
-Iterable for all the keys.
-
-#### .values()
-
-Iterable for all the values.
-
-#### .entriesAscending()
-
-Iterable for all entries, starting with the oldest (ascending in recency).
-
-#### .entriesDescending()
-
-Iterable for all entries, starting with the newest (descending in recency).
-
-#### .size
-
-The stored item count.
-
----
-
-<div align="center">
-	<b>
-		<a href="https://tidelift.com/subscription/pkg/npm-quick-lru?utm_source=npm-quick-lru&utm_medium=referral&utm_campaign=readme">Get professional support for this package with a Tidelift subscription</a>
-	</b>
-	<br>
-	<sub>
-		Tidelift helps make open source sustainable for maintainers while giving companies<br>assurances about security, maintenance, and licensing for their dependencies.
-	</sub>
-</div>
+MIT © [Sindre Sorhus](https://sindresorhus.com)
